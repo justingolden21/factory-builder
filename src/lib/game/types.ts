@@ -13,7 +13,7 @@ export type Direction = 'north' | 'east' | 'south' | 'west';
 
 export type EntityId = string;
 
-export type EntityType = 'player';
+export type EntityType = 'belt' | 'drill' | 'chest' | 'inserter' | 'splitter';
 
 export type PlayerState = {
   position: Vec2;
@@ -32,6 +32,11 @@ export type WorldState = {
   entities: Record<EntityId, EntityState>;
 };
 
+export type EngineState = {
+  accumulatorMs: number;
+};
+
 export type GameState = {
+  engine: EngineState;
   world: WorldState;
 };

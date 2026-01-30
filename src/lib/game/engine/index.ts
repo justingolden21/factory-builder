@@ -7,9 +7,11 @@ Owns game state creation and the fixed-timestep simulation loop.
 import type { GameState } from '$lib/game/types';
 
 const FIXED_STEP_MS = 50;
-let accumulatorMs = 0;
 
 const baseState: GameState = {
+  engine: {
+    accumulatorMs: 0
+  },
   world: {
     tick: 0,
     player: {
@@ -20,10 +22,14 @@ const baseState: GameState = {
 };
 
 export const createGame = (initial: Partial<GameState> = {}): GameState => {
+  const engine = initial.engine ?? {};
   const world = initial.world ?? {};
   const player = world.player ?? {};
 
   return {
+    engine: {
+      accumulatorMs: engine.accumulatorMs ?? baseState.engine.accumulatorMs
+    },
     world: {
       tick: world.tick ?? baseState.world.tick,
       player: {
@@ -40,7 +46,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
 export const stepGame = (state: GameState, dtMs: number): GameState => {
   const safeDt = Math.max(0, dtMs);
 
-  accumulatorMs += safeDt;
+  let accumulatorMs = state.engine.accumulatorMs + safeDt;
 
   let ticks = 0;
   while (accumulatorMs >= FIXED_STEP_MS) {
@@ -49,10 +55,22 @@ export const stepGame = (state: GameState, dtMs: number): GameState => {
   }
 
   if (ticks === 0) {
-    return state;
+    if (accumulatorMs === state.engine.accumulatorMs) {
+      return state;
+    }
+
+    return {
+      engine: {
+        accumulatorMs
+      },
+      world: state.world
+    };
   }
 
   return {
+    engine: {
+      accumulatorMs
+    },
     world: {
       tick: state.world.tick + ticks,
       player: {
@@ -61,8 +79,4 @@ export const stepGame = (state: GameState, dtMs: number): GameState => {
       entities: { ...state.world.entities }
     }
   };
-};
-
-export const resetEngineForTests = (): void => {
-  accumulatorMs = 0;
 };

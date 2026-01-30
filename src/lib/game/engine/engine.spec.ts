@@ -4,8 +4,8 @@ Engine determinism tests.
 Validates fixed-step ticking and immutability guarantees for the core loop.
 */
 
-import { beforeEach, describe, expect, it } from 'vitest';
-import { createGame, resetEngineForTests, stepGame } from '$lib/game/engine';
+import { describe, expect, it } from 'vitest';
+import { createGame, stepGame } from '$lib/game/engine';
 
 const deepFreeze = <T>(value: T): T => {
   if (value && typeof value === 'object') {
@@ -21,10 +21,6 @@ const deepFreeze = <T>(value: T): T => {
 };
 
 describe('engine', () => {
-  beforeEach(() => {
-    resetEngineForTests();
-  });
-
   it('advances deterministically with fixed timesteps', () => {
     let chunked = createGame();
 
@@ -32,7 +28,6 @@ describe('engine', () => {
       chunked = stepGame(chunked, 10);
     }
 
-    resetEngineForTests();
     const single = stepGame(createGame(), 100);
 
     expect(chunked.world.tick).toBe(single.world.tick);

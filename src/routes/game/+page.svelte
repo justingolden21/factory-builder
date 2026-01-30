@@ -6,6 +6,7 @@ Displays the engine status and current tick for the minimal game loop.
 
 <script lang="ts">
   import { createGameStore } from '$lib/game/ui/gameStore';
+  import GameView from '$lib/game/ui/GameView.svelte';
   import type { GameState } from '$lib/game/types';
 
   const gameStore = createGameStore();
@@ -33,3 +34,6 @@ Displays the engine status and current tick for the minimal game loop.
 
 <h1>Game boot OK</h1>
 <p>Tick: {game.world.tick}</p>
+<div class="mt-4 h-[70vh] w-full">
+  <GameView {game} />
+</div>
