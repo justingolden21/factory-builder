@@ -25,6 +25,12 @@ export type PlayerState = {
   };
 };
 
+export type BuildTool = 'none' | 'belt' | 'drill' | 'chest';
+
+export type BuildState = {
+  tool: BuildTool;
+};
+
 export type EntityState = {
   id: EntityId;
   type: EntityType;
@@ -36,6 +42,8 @@ export type WorldState = {
   tick: number;
   player: PlayerState;
   entities: Record<EntityId, EntityState>;
+  build: BuildState;
+  nextEntityId: number;
 };
 
 export type EngineState = {

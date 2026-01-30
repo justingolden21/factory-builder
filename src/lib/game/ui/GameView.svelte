@@ -13,12 +13,16 @@ Owns viewport measurement and camera interactions for the bootable game view.
 
   let { game, dispatch } = $props<{ game: GameState; dispatch: (command: GameCommand) => void }>();
 
+  const tools = ['none', 'belt', 'drill', 'chest'] as const;
+
   let wrapper: HTMLDivElement | null = $state(null);
   let viewport = $state({ width: 0, height: 0 });
   let camera = $state<Camera>({ x: 0, y: 0, zoom: 48 });
   let hoverTile = $state<{ x: number; y: number } | null>(null);
   let isPanning = $state(false);
+  let rightPointerStart = $state<{ x: number; y: number } | null>(null);
   let lastPointer = $state<{ x: number; y: number } | null>(null);
+  let panMoved = $state(false);
 
   $effect(() => {
     if (!wrapper) {
@@ -76,7 +80,9 @@ Owns viewport measurement and camera interactions for the bootable game view.
     }
 
     event.preventDefault();
-    isPanning = true;
+    isPanning = false;
+    panMoved = false;
+    rightPointerStart = { x: event.clientX, y: event.clientY };
     lastPointer = { x: event.clientX, y: event.clientY };
     (event.currentTarget as Element).setPointerCapture?.(event.pointerId);
   };
@@ -93,13 +99,25 @@ Owns viewport measurement and camera interactions for the bootable game view.
 
     hoverTile = { x: Math.floor(worldPos.x), y: Math.floor(worldPos.y) };
 
-    if (!isPanning || !lastPointer) {
+    if (!rightPointerStart || !lastPointer) {
       return;
     }
 
     const deltaX = event.clientX - lastPointer.x;
     const deltaY = event.clientY - lastPointer.y;
     lastPointer = { x: event.clientX, y: event.clientY };
+
+    if (!panMoved && rightPointerStart) {
+      const distance = Math.hypot(event.clientX - rightPointerStart.x, event.clientY - rightPointerStart.y);
+      if (distance >= 4) {
+        panMoved = true;
+        isPanning = true;
+      }
+    }
+
+    if (!isPanning) {
+      return;
+    }
 
     camera = {
       ...camera,
@@ -113,12 +131,22 @@ Owns viewport measurement and camera interactions for the bootable game view.
       return;
     }
 
+    if (!panMoved && hoverTile) {
+      dispatch({ type: 'remove_entity', tileX: hoverTile.x, tileY: hoverTile.y });
+    }
+
     isPanning = false;
+    panMoved = false;
+    rightPointerStart = null;
     lastPointer = null;
   };
 
   const handlePointerLeave = () => {
     hoverTile = null;
+    isPanning = false;
+    panMoved = false;
+    rightPointerStart = null;
+    lastPointer = null;
   };
 
   const handleWheel = (event: WheelEvent) => {
@@ -129,6 +157,20 @@ Owns viewport measurement and camera interactions for the bootable game view.
       ...camera,
       zoom: clampZoom(camera.zoom * zoomFactor)
     };
+  };
+
+  const handleLeftClick = (event: PointerEvent) => {
+    if (event.button !== 0 || !hoverTile) {
+      return;
+    }
+
+    const tool = game.world.build.tool;
+    if (tool === 'none') {
+      return;
+    }
+
+    event.preventDefault();
+    dispatch({ type: 'place_entity', entityType: tool, tileX: hoverTile.x, tileY: hoverTile.y });
   };
 
   const handleKey = (event: KeyboardEvent, isDown: boolean) => {
@@ -157,8 +199,9 @@ Owns viewport measurement and camera interactions for the bootable game view.
   };
 </script>
 
+<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
 <div
-  class="h-full w-full"
+  class="relative h-full w-full"
   bind:this={wrapper}
   role="application"
   tabindex="0"
@@ -166,12 +209,25 @@ Owns viewport measurement and camera interactions for the bootable game view.
   oncontextmenu={(event) => event.preventDefault()}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
-  onpointerup={handlePointerUp}
+  onpointerup={(event) => {
+    handlePointerUp(event);
+    handleLeftClick(event);
+  }}
   onpointerleave={handlePointerLeave}
   onwheel={handleWheel}
   onkeydown={(event) => handleKey(event, true)}
   onkeyup={(event) => handleKey(event, false)}
 >
+  <div class="absolute left-3 top-3 z-10 flex gap-2 rounded border border-slate-700/60 bg-slate-900/70 p-2 text-xs text-slate-100">
+    {#each tools as tool}
+      <button
+        class={`rounded px-2 py-1 ${game.world.build.tool === tool ? 'bg-slate-200 text-slate-900' : 'bg-slate-800/70'}`}
+        onclick={() => dispatch({ type: 'select_tool', tool })}
+      >
+        {tool}
+      </button>
+    {/each}
+  </div>
   <svg class="block h-full w-full">
     {#if viewport.width > 0 && viewport.height > 0}
       <g>
@@ -207,6 +263,33 @@ Owns viewport measurement and camera interactions for the bootable game view.
         viewport.width,
         viewport.height
       )}
+      {#each Object.values(game.world.entities) as entity (entity.id)}
+        {@const entityPos = worldToScreen(
+          entity.position.x,
+          entity.position.y,
+          camera,
+          viewport.width,
+          viewport.height
+        )}
+        {@const entitySize = camera.zoom * 0.8}
+        <rect
+          x={entityPos.x - entitySize / 2}
+          y={entityPos.y - entitySize / 2}
+          width={entitySize}
+          height={entitySize}
+          fill="rgba(15, 23, 42, 0.8)"
+          stroke="rgba(148, 163, 184, 0.6)"
+        />
+        <text
+          x={entityPos.x}
+          y={entityPos.y + entitySize * 0.2}
+          text-anchor="middle"
+          font-size={entitySize * 0.4}
+          fill="white"
+        >
+          {entity.type === 'belt' ? 'b' : entity.type === 'drill' ? 'd' : 'c'}
+        </text>
+      {/each}
       <circle
         cx={playerPos.x}
         cy={playerPos.y}

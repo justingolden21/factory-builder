@@ -24,7 +24,11 @@ const baseState: GameState = {
         right: false
       }
     },
-    entities: {}
+    entities: {},
+    build: {
+      tool: 'none'
+    },
+    nextEntityId: 1
   }
 };
 
@@ -33,6 +37,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
   const world = initial.world ?? {};
   const player = world.player ?? {};
   const moveIntent = player.moveIntent ?? baseState.world.player.moveIntent;
+  const build = world.build ?? baseState.world.build;
 
   return {
     engine: {
@@ -47,7 +52,11 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
         },
         moveIntent: { ...moveIntent }
       },
-      entities: { ...baseState.world.entities, ...(world.entities ?? {}) }
+      entities: { ...baseState.world.entities, ...(world.entities ?? {}) },
+      build: {
+        tool: build.tool ?? baseState.world.build.tool
+      },
+      nextEntityId: world.nextEntityId ?? baseState.world.nextEntityId
     }
   };
 };

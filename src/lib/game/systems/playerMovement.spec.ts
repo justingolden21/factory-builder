@@ -22,6 +22,10 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
       ...overrides.player
     },
     entities: {},
+    build: {
+      tool: 'none'
+    },
+    nextEntityId: 1,
     ...overrides
   };
 };
