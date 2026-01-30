@@ -6,8 +6,8 @@ Applies queued input commands to state while keeping the engine deterministic.
 
 import type { GameCommand } from '$lib/game/engine/commands';
 import type { EntityState, GameState } from '$lib/game/types';
-import { addOne, takeOne } from '$lib/game/world/inventory';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
+import { canInsert, canTake, insertOneInto, takeOneFrom } from '$lib/game/world/itemTransfer';
 import { getEntityAt, tileKey, tileOfEntity } from '$lib/game/world/tiles';
 
 export const applyCommands = (state: GameState, commands: GameCommand[]): GameState => {
@@ -170,7 +170,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         direction: nextDirection
       };
     } else if (command.type === 'pickup_from_tile') {
-      if (nextPlayerInventory.item) {
+      if (nextPlayerInventory.slot) {
         continue;
       }
 
@@ -179,33 +179,41 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         continue;
       }
 
-      if (entity.type === 'chest' && entity.inventory) {
-        const [remaining, taken] = takeOne(entity.inventory);
+      if (entity.type === 'chest') {
+        if (!canTake(entity.inventory ?? null)) {
+          continue;
+        }
+
+        const [remaining, taken] = takeOneFrom(entity.inventory ?? null);
         if (!taken) {
           continue;
         }
 
         ensureWorldClone();
-        nextPlayerInventory.item = taken;
+        nextPlayerInventory.slot = taken;
         nextEntities[entity.id] = {
           ...entity,
           inventory: remaining
         };
-      } else if (entity.type === 'belt' && entity.beltItem) {
-        const [remaining, taken] = takeOne(entity.beltItem);
+      } else if (entity.type === 'belt') {
+        if (!canTake(entity.beltItem ?? null)) {
+          continue;
+        }
+
+        const [remaining, taken] = takeOneFrom(entity.beltItem ?? null);
         if (!taken) {
           continue;
         }
 
         ensureWorldClone();
-        nextPlayerInventory.item = taken;
+        nextPlayerInventory.slot = taken;
         nextEntities[entity.id] = {
           ...entity,
           beltItem: remaining
         };
       }
     } else if (command.type === 'drop_to_tile') {
-      const carried = nextPlayerInventory.item;
+      const carried = nextPlayerInventory.slot;
       if (!carried) {
         continue;
       }
@@ -217,24 +225,24 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
 
       if (entity.type === 'chest') {
         const existing = entity.inventory;
-        if (existing && existing.type !== carried.type) {
+        if (!canInsert(existing ?? null, carried.type)) {
           continue;
         }
 
         ensureWorldClone();
-        const nextInventory = addOne(existing ?? null, carried.type);
+        const nextInventory = insertOneInto(existing ?? null, carried.type);
         nextEntities[entity.id] = {
           ...entity,
           inventory: nextInventory
         };
-        nextPlayerInventory.item = null;
+        nextPlayerInventory.slot = null;
       } else if (entity.type === 'belt' && !entity.beltItem) {
         ensureWorldClone();
         nextEntities[entity.id] = {
           ...entity,
-          beltItem: addOne(null, carried.type)
+          beltItem: insertOneInto(null, carried.type)
         };
-        nextPlayerInventory.item = null;
+        nextPlayerInventory.slot = null;
       }
     }
   }

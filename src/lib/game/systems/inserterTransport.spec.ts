@@ -14,7 +14,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
     player: {
       position: { x: 0, y: 0 },
       moveIntent: { up: false, down: false, left: false, right: false },
-      inventory: { item: null }
+      inventory: { slot: null }
     },
     entities: {},
     entityTiles: {},
@@ -97,6 +97,43 @@ describe('inserter transport', () => {
 
     expect(next.entities['beltIn']?.beltItem).toBeNull();
     expect(next.entities['chest']?.inventory?.amount).toBe(3);
+  });
+
+  it('moves exactly one item from belt to chest', () => {
+    const world = createWorld({
+      entities: {
+        beltIn: {
+          id: 'beltIn',
+          type: 'belt',
+          position: { x: 0.5, y: 5.5 },
+          direction: 'east',
+          beltItem: { type: 'iron_ore', amount: 2 }
+        },
+        inserter: {
+          id: 'inserter',
+          type: 'inserter',
+          position: { x: 1.5, y: 5.5 },
+          direction: 'east'
+        },
+        chest: {
+          id: 'chest',
+          type: 'chest',
+          position: { x: 2.5, y: 5.5 },
+          direction: 'north',
+          inventory: { type: 'iron_ore', amount: 1 }
+        }
+      },
+      entityTiles: {
+        '0:5': 'beltIn',
+        '1:5': 'inserter',
+        '2:5': 'chest'
+      }
+    });
+
+    const next = applyInserterTransport(world, 1);
+
+    expect(next.entities['beltIn']?.beltItem?.amount).toBe(1);
+    expect(next.entities['chest']?.inventory?.amount).toBe(2);
   });
 
   it('does nothing when output is invalid', () => {

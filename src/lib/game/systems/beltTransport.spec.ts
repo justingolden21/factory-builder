@@ -14,7 +14,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
     player: {
       position: { x: 0, y: 0 },
       moveIntent: { up: false, down: false, left: false, right: false },
-      inventory: { item: null }
+      inventory: { slot: null }
     },
     entities: {},
     entityTiles: {},

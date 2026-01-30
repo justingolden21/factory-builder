@@ -20,7 +20,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
         right: false
       },
       inventory: {
-        item: null
+        slot: null
       },
       ...overrides.player
     },

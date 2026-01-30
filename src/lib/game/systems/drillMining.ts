@@ -4,9 +4,9 @@ Drill mining simulation.
 Consumes resource tiles under drills and fills a small internal buffer over time.
 */
 
-import type { Inventory, WorldState } from '$lib/game/types';
-import { addOne, takeOne } from '$lib/game/world/inventory';
+import type { ItemSlot, WorldState } from '$lib/game/types';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
+import { canTake, insertOneInto, takeOneFrom } from '$lib/game/world/itemTransfer';
 import { getEntityAt } from '$lib/game/world/tiles';
 
 const FIXED_STEP_MS = 50;
@@ -85,19 +85,19 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
 
     ensureWorldClone();
 
-    let nextInventory: Inventory | null = inventory;
+    let nextInventory: ItemSlot = inventory;
     for (let i = 0; i < mined; i += 1) {
-      nextInventory = addOne(nextInventory, 'iron_ore');
+      nextInventory = insertOneInto(nextInventory, 'iron_ore');
     }
 
     const delta = directionDeltas[entity.direction];
-    if (delta && nextInventory && nextInventory.amount > 0) {
+    if (delta && canTake(nextInventory)) {
       const outputX = tileX + delta.x;
       const outputY = tileY + delta.y;
       const target = getEntityAt(nextWorld, outputX, outputY);
 
       if (target && target.type === 'belt' && !target.beltItem) {
-        const [remaining, taken] = takeOne(nextInventory);
+        const [remaining, taken] = takeOneFrom(nextInventory);
         if (!taken) {
           continue;
         }
@@ -105,7 +105,7 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
         nextInventory = remaining;
         nextEntities[target.id] = {
           ...target,
-          beltItem: taken
+          beltItem: insertOneInto(null, taken.type)
         };
       }
     }

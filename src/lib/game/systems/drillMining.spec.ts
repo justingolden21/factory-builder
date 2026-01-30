@@ -15,7 +15,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
     player: {
       position: { x: 0, y: 0 },
       moveIntent: { up: false, down: false, left: false, right: false },
-      inventory: { item: null }
+      inventory: { slot: null }
     },
     entities: {},
     entityTiles: {},
@@ -134,7 +134,7 @@ describe('drill mining', () => {
 
     const next = applyDrillMining(world, 1);
 
-    expect(next.entities['1']?.inventory?.amount).toBe(0);
+    expect(next.entities['1']?.inventory).toBeNull();
     expect(next.entities['2']?.beltItem?.amount).toBe(1);
   });
 });

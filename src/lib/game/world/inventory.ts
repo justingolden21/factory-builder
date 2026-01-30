@@ -4,9 +4,9 @@ Inventory helpers.
 Provides pure utilities for moving single items between inventories.
 */
 
-import type { Inventory, ItemType } from '$lib/game/types';
+import type { ItemSlot, ItemType } from '$lib/game/types';
 
-export const takeOne = (inv: Inventory | null): [Inventory | null, Inventory | null] => {
+export const takeOne = (inv: ItemSlot): [ItemSlot, ItemSlot] => {
   if (!inv || inv.amount <= 0) {
     return [inv, null];
   }
@@ -15,7 +15,7 @@ export const takeOne = (inv: Inventory | null): [Inventory | null, Inventory | n
   return [remaining, { type: inv.type, amount: 1 }];
 };
 
-export const addOne = (inv: Inventory | null, type: ItemType): Inventory => {
+export const addOne = (inv: ItemSlot, type: ItemType): ItemSlot => {
   if (!inv) {
     return { type, amount: 1 };
   }

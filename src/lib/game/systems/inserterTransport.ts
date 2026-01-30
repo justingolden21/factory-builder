@@ -4,8 +4,8 @@ Inserter transport simulation.
 Moves one item from the tile behind an inserter to the tile in front.
 */
 
-import type { Inventory, WorldState } from '$lib/game/types';
-import { addOne, takeOne } from '$lib/game/world/inventory';
+import type { WorldState } from '$lib/game/types';
+import { canInsert, canTake, insertOneInto, takeOneFrom } from '$lib/game/world/itemTransfer';
 import { getEntityAt, tileOfEntity } from '$lib/game/world/tiles';
 
 type DirectionDelta = {
@@ -65,11 +65,11 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
       const input = getEntityAt(nextWorld, inputX, inputY);
       const output = getEntityAt(nextWorld, outputX, outputY);
 
-      if (!input || input.type !== 'belt' || !input.beltItem) {
+      if (!input || input.type !== 'belt' || !canTake(input.beltItem ?? null)) {
         continue;
       }
 
-      const [remaining, taken] = takeOne(input.beltItem);
+      const [remaining, taken] = takeOneFrom(input.beltItem ?? null);
       if (!taken) {
         continue;
       }
@@ -90,11 +90,11 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
         };
         nextEntities[output.id] = {
           ...output,
-          beltItem: taken
+          beltItem: insertOneInto(null, taken.type)
         };
       } else if (output.type === 'chest') {
         const existing = output.inventory;
-        if (existing && existing.type !== taken.type) {
+        if (!canInsert(existing ?? null, taken.type)) {
           continue;
         }
 
@@ -105,7 +105,7 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
         };
         nextEntities[output.id] = {
           ...output,
-          inventory: addOne(existing ?? null, taken.type)
+          inventory: insertOneInto(existing ?? null, taken.type)
         };
       }
     }

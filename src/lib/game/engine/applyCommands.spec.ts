@@ -97,7 +97,7 @@ describe('applyCommands', () => {
 
     const next = applyCommands(state, [{ type: 'pickup_from_tile', tileX: 1, tileY: 1 }]);
 
-    expect(next.world.player.inventory.item?.amount).toBe(1);
+    expect(next.world.player.inventory.slot?.amount).toBe(1);
     expect(next.world.entities['belt']?.beltItem).toBeNull();
   });
 
@@ -105,7 +105,7 @@ describe('applyCommands', () => {
     const state = createGame({
       world: {
         player: {
-          inventory: { item: { type: 'iron_ore', amount: 1 } }
+          inventory: { slot: { type: 'iron_ore', amount: 1 } }
         },
         entities: {
           chest: {
@@ -124,7 +124,7 @@ describe('applyCommands', () => {
 
     const next = applyCommands(state, [{ type: 'drop_to_tile', tileX: 2, tileY: 2 }]);
 
-    expect(next.world.player.inventory.item).toBeNull();
+    expect(next.world.player.inventory.slot).toBeNull();
     expect(next.world.entities['chest']?.inventory?.amount).toBe(3);
   });
 
@@ -132,7 +132,7 @@ describe('applyCommands', () => {
     const state = createGame({
       world: {
         player: {
-          inventory: { item: { type: 'iron_ore', amount: 1 } }
+          inventory: { slot: { type: 'iron_ore', amount: 1 } }
         },
         entities: {
           belt: {

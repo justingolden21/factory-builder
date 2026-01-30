@@ -48,8 +48,10 @@ export type Inventory = {
   amount: number;
 };
 
+export type ItemSlot = Inventory | null;
+
 export type PlayerInventory = {
-  item?: Inventory | null;
+  slot: ItemSlot;
 };
 
 export type EntityState = {
@@ -57,9 +59,9 @@ export type EntityState = {
   type: EntityType;
   position: Vec2;
   direction: Direction;
-  inventory?: Inventory | null;
+  inventory?: ItemSlot;
   miningProgress?: number;
-  beltItem?: Inventory | null;
+  beltItem?: ItemSlot;
 };
 
 export type WorldState = {

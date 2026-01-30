@@ -20,6 +20,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
   let viewport = $state({ width: 0, height: 0 });
   let camera = $state<Camera>({ x: 0, y: 0, zoom: 48 });
   let hoverTile = $state<{ x: number; y: number } | null>(null);
+  let hoverScreen = $state<{ x: number; y: number } | null>(null);
   let isPanning = $state(false);
   let rightPointerStart = $state<{ x: number; y: number } | null>(null);
   let lastPointer = $state<{ x: number; y: number } | null>(null);
@@ -75,6 +76,23 @@ Owns viewport measurement and camera interactions for the bootable game view.
     return list;
   });
 
+  const hoveredEntity = $derived.by(() => {
+    if (!hoverTile) {
+      return null;
+    }
+
+    const id = game.world.entityTiles[`${hoverTile.x}:${hoverTile.y}`];
+    return id ? game.world.entities[id] ?? null : null;
+  });
+
+  const hoveredChest = $derived.by(() => {
+    if (!hoveredEntity || hoveredEntity.type !== 'chest') {
+      return null;
+    }
+
+    return hoveredEntity;
+  });
+
   const handlePointerDown = (event: PointerEvent) => {
     if (event.button !== 2) {
       return;
@@ -99,6 +117,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
     const worldPos = screenToWorld(localX, localY, camera, viewport.width, viewport.height);
 
     hoverTile = { x: Math.floor(worldPos.x), y: Math.floor(worldPos.y) };
+    hoverScreen = { x: localX, y: localY };
 
     if (!rightPointerStart || !lastPointer) {
       return;
@@ -144,6 +163,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
 
   const handlePointerLeave = () => {
     hoverTile = null;
+    hoverScreen = null;
     isPanning = false;
     panMoved = false;
     rightPointerStart = null;
@@ -170,7 +190,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
       const id = game.world.entityTiles[`${hoverTile.x}:${hoverTile.y}`];
       return id ? game.world.entities[id] ?? null : null;
     })();
-    const carriedItem = game.world.player.inventory.item;
+    const carriedItem = game.world.player.inventory.slot;
 
     if (tool === 'none') {
       if (!carriedItem && existing) {
@@ -272,12 +292,21 @@ Owns viewport measurement and camera interactions for the bootable game view.
   </div>
   <div class="absolute right-3 top-3 z-10 rounded border border-slate-700/60 bg-slate-900/70 px-3 py-2 text-xs text-slate-100">
     Player Inventory:
-    {#if game.world.player.inventory.item}
-      io x{game.world.player.inventory.item.amount}
+    {#if game.world.player.inventory.slot}
+      io x{game.world.player.inventory.slot.amount}
     {:else}
       empty
     {/if}
   </div>
+  {#if hoveredChest && hoverScreen}
+    {@const chestAmount = hoveredChest.inventory?.amount ?? 0}
+    <div
+      class="pointer-events-none absolute z-20 rounded border border-slate-700/60 bg-slate-900/80 px-2 py-1 text-xs text-slate-100"
+      style={`left: ${hoverScreen.x + 12}px; top: ${hoverScreen.y + 12}px;`}
+    >
+      {chestAmount > 0 ? `Chest: io x${chestAmount}` : 'Chest: empty'}
+    </div>
+  {/if}
   <svg class="block h-full w-full">
     {#if viewport.width > 0 && viewport.height > 0}
       <g>
@@ -423,7 +452,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
       >
         P
       </text>
-      {#if game.world.player.inventory.item}
+      {#if game.world.player.inventory.slot}
         <circle
           cx={playerPos.x + camera.zoom * 0.22}
           cy={playerPos.y - camera.zoom * 0.22}

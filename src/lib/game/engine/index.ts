@@ -42,7 +42,7 @@ const baseState: GameState = {
         right: false
       },
       inventory: {
-        item: null
+        slot: null
       }
     },
     entities: {},
@@ -98,7 +98,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
         },
         moveIntent: { ...moveIntent },
         inventory: {
-          item: inventory.item ?? null
+          slot: inventory.slot ?? null
         }
       },
       entities: nextEntities,

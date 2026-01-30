@@ -5,7 +5,7 @@ Moves a single item between belt tiles each tick in a deterministic order.
 */
 
 import type { Inventory, WorldState } from '$lib/game/types';
-import { takeOne } from '$lib/game/world/inventory';
+import { canTake, insertOneInto, takeOneFrom } from '$lib/game/world/itemTransfer';
 import { getEntityAt, tileOfEntity } from '$lib/game/world/tiles';
 
 type DirectionDelta = {
@@ -49,7 +49,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
 
     for (const id of entityKeys) {
       const entity = nextEntities[id];
-      if (!entity || entity.type !== 'belt' || !entity.beltItem) {
+      if (!entity || entity.type !== 'belt' || !canTake(entity.beltItem ?? null)) {
         continue;
       }
 
@@ -67,7 +67,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
         continue;
       }
 
-      const [, taken] = takeOne(entity.beltItem);
+      const [, taken] = takeOneFrom(entity.beltItem ?? null);
       if (!taken) {
         continue;
       }
@@ -96,7 +96,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
       };
       nextEntities[move.toId] = {
         ...to,
-        beltItem: move.item
+        beltItem: insertOneInto(null, move.item.type)
       };
     }
   }
