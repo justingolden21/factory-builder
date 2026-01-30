@@ -73,6 +73,22 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         }
       }
 
+      if (command.entityType === 'inserter') {
+        const neighbors = [
+          findEntityAt(command.tileX, command.tileY - 1),
+          findEntityAt(command.tileX + 1, command.tileY),
+          findEntityAt(command.tileX, command.tileY + 1),
+          findEntityAt(command.tileX - 1, command.tileY)
+        ];
+        const hasValidNeighbor = neighbors.some(
+          (neighbor) => neighbor?.type === 'belt' || neighbor?.type === 'chest'
+        );
+
+        if (!hasValidNeighbor) {
+          continue;
+        }
+      }
+
       if (findEntityAt(command.tileX, command.tileY)) {
         continue;
       }
@@ -119,7 +135,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
       }
     } else if (command.type === 'rotate_entity') {
       const entity = findEntityAt(command.tileX, command.tileY);
-      if (!entity || entity.type !== 'belt') {
+      if (!entity || (entity.type !== 'belt' && entity.type !== 'inserter')) {
         continue;
       }
 

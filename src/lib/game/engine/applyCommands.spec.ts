@@ -54,4 +54,13 @@ describe('applyCommands', () => {
 
     expect(next).toBe(state);
   });
+
+  it('does not place inserter without valid neighbor', () => {
+    const state = createGame({ world: { resources: {} } });
+    const next = applyCommands(state, [
+      { type: 'place_entity', entityType: 'inserter', tileX: 8, tileY: 8 }
+    ]);
+
+    expect(next).toBe(state);
+  });
 });

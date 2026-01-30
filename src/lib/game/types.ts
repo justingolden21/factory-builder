@@ -25,7 +25,7 @@ export type PlayerState = {
   };
 };
 
-export type BuildTool = 'none' | 'belt' | 'drill' | 'chest';
+export type BuildTool = 'none' | 'belt' | 'drill' | 'chest' | 'inserter';
 
 export type BuildState = {
   tool: BuildTool;

@@ -14,7 +14,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
 
   let { game, dispatch } = $props<{ game: GameState; dispatch: (command: GameCommand) => void }>();
 
-  const tools = ['none', 'belt', 'drill', 'chest'] as const;
+  const tools = ['none', 'belt', 'drill', 'chest', 'inserter'] as const;
 
   let wrapper: HTMLDivElement | null = $state(null);
   let viewport = $state({ width: 0, height: 0 });
@@ -189,6 +189,18 @@ Owns viewport measurement and camera interactions for the bootable game view.
       }
     }
 
+    if (tool === 'inserter') {
+      const existing = Object.values(game.world.entities).find((entity) => {
+        return Math.floor(entity.position.x) === hoverTile.x && Math.floor(entity.position.y) === hoverTile.y;
+      });
+
+      if (existing?.type === 'inserter') {
+        event.preventDefault();
+        dispatch({ type: 'rotate_entity', tileX: hoverTile.x, tileY: hoverTile.y });
+        return;
+      }
+    }
+
     event.preventDefault();
     dispatch({ type: 'place_entity', entityType: tool, tileX: hoverTile.x, tileY: hoverTile.y });
   };
@@ -320,9 +332,15 @@ Owns viewport measurement and camera interactions for the bootable game view.
           font-size={entitySize * 0.4}
           fill="white"
         >
-          {entity.type === 'belt' ? 'b' : entity.type === 'drill' ? 'd' : 'c'}
+          {entity.type === 'belt'
+            ? 'b'
+            : entity.type === 'drill'
+              ? 'd'
+              : entity.type === 'inserter'
+                ? 'i'
+                : 'c'}
         </text>
-        {#if entity.type === 'belt'}
+        {#if entity.type === 'belt' || entity.type === 'inserter'}
           {@const arrowSize = entitySize * 0.24}
           {@const arrowPoints =
             entity.direction === 'north'
@@ -331,7 +349,8 @@ Owns viewport measurement and camera interactions for the bootable game view.
                 ? `${entityPos.x + arrowSize},${entityPos.y} ${entityPos.x - arrowSize * 0.4},${entityPos.y - arrowSize * 0.6} ${entityPos.x - arrowSize * 0.4},${entityPos.y + arrowSize * 0.6}`
                 : entity.direction === 'south'
                   ? `${entityPos.x},${entityPos.y + arrowSize} ${entityPos.x - arrowSize * 0.6},${entityPos.y - arrowSize * 0.4} ${entityPos.x + arrowSize * 0.6},${entityPos.y - arrowSize * 0.4}`
-                  : `${entityPos.x - arrowSize},${entityPos.y} ${entityPos.x + arrowSize * 0.4},${entityPos.y - arrowSize * 0.6} ${entityPos.x + arrowSize * 0.4},${entityPos.y + arrowSize * 0.6}`}\n          <polygon points={arrowPoints} fill="rgba(226, 232, 240, 0.8)" />
+                  : `${entityPos.x - arrowSize},${entityPos.y} ${entityPos.x + arrowSize * 0.4},${entityPos.y - arrowSize * 0.6} ${entityPos.x + arrowSize * 0.4},${entityPos.y + arrowSize * 0.6}`}
+          <polygon points={arrowPoints} fill="rgba(226, 232, 240, 0.8)" />
           {#if entity.beltItem}
             <circle cx={entityPos.x} cy={entityPos.y} r={entitySize * 0.18} fill="rgba(226, 232, 240, 0.9)" />
             <text
@@ -346,6 +365,17 @@ Owns viewport measurement and camera interactions for the bootable game view.
           {/if}
         {/if}
         {#if entity.type === 'drill'}
+          <text
+            x={entityPos.x}
+            y={entityPos.y + entitySize * 0.48}
+            text-anchor="middle"
+            font-size={entitySize * 0.22}
+            fill="rgba(226, 232, 240, 0.9)"
+          >
+            io: {entity.inventory?.amount ?? 0}
+          </text>
+        {/if}
+        {#if entity.type === 'chest'}
           <text
             x={entityPos.x}
             y={entityPos.y + entitySize * 0.48}

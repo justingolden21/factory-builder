@@ -18,6 +18,8 @@ const directionDeltas: Record<string, DirectionDelta> = {
   west: { x: -1, y: 0 }
 };
 
+const tileKey = (x: number, y: number) => `${x}:${y}`;
+
 export const applyBeltTransport = (world: WorldState, ticks: number): WorldState => {
   if (ticks <= 0) {
     return world;
@@ -40,11 +42,20 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
     changed = true;
   };
 
-  const entityKeys = Object.keys(nextEntities).sort();
-
   for (let tick = 0; tick < ticks; tick += 1) {
     const plannedMoves: Array<{ fromId: string; toId: string; item: ItemStack }> = [];
     const blockedTargets = new Set<string>();
+    const entityKeys = Object.keys(nextEntities).sort();
+    const tileMap = new Map<string, string>();
+
+    for (const id of entityKeys) {
+      const entity = nextEntities[id];
+      if (!entity || entity.type !== 'belt') {
+        continue;
+      }
+
+      tileMap.set(tileKey(Math.floor(entity.position.x), Math.floor(entity.position.y)), id);
+    }
 
     for (const id of entityKeys) {
       const entity = nextEntities[id];
@@ -60,13 +71,8 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
       const targetX = Math.floor(entity.position.x) + delta.x;
       const targetY = Math.floor(entity.position.y) + delta.y;
 
-      const target = Object.values(nextEntities).find((candidate) => {
-        if (candidate.type !== 'belt') {
-          return false;
-        }
-
-        return Math.floor(candidate.position.x) === targetX && Math.floor(candidate.position.y) === targetY;
-      });
+      const targetId = tileMap.get(tileKey(targetX, targetY));
+      const target = targetId ? nextEntities[targetId] : null;
 
       if (!target || target.beltItem || blockedTargets.has(target.id)) {
         continue;

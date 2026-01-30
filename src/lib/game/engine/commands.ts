@@ -18,7 +18,7 @@ export type GameCommand =
     }
   | {
       type: 'place_entity';
-      entityType: Exclude<EntityType, 'inserter' | 'splitter'>;
+      entityType: Exclude<EntityType, 'splitter'>;
       tileX: number;
       tileY: number;
     }

@@ -5,8 +5,9 @@ Owns game state creation and the fixed-timestep simulation loop.
 */
 
 import type { GameState } from '$lib/game/types';
-import { applyDrillMining } from '$lib/game/systems/drillMining';
 import { applyBeltTransport } from '$lib/game/systems/beltTransport';
+import { applyDrillMining } from '$lib/game/systems/drillMining';
+import { applyInserterTransport } from '$lib/game/systems/inserterTransport';
 import { applyPlayerMovement } from '$lib/game/systems/playerMovement';
 import { resourceKey } from '$lib/game/world/resources';
 
@@ -103,7 +104,8 @@ export const stepGame = (state: GameState, dtMs: number): GameState => {
   const movedWorld = applyPlayerMovement(state.world, ticks);
   const minedWorld = applyDrillMining(movedWorld, ticks);
   const beltWorld = applyBeltTransport(minedWorld, ticks);
-  const nextWorldBase = beltWorld === state.world ? state.world : beltWorld;
+  const inserterWorld = applyInserterTransport(beltWorld, ticks);
+  const nextWorldBase = inserterWorld === state.world ? state.world : inserterWorld;
 
   return {
     engine: {
