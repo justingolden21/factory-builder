@@ -40,6 +40,9 @@ const baseState: GameState = {
         down: false,
         left: false,
         right: false
+      },
+      inventory: {
+        item: null
       }
     },
     entities: {},
@@ -57,6 +60,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
   const world = initial.world ?? {};
   const player = world.player ?? {};
   const moveIntent = player.moveIntent ?? baseState.world.player.moveIntent;
+  const inventory = player.inventory ?? baseState.world.player.inventory;
   const build = world.build ?? baseState.world.build;
   const resources = world.resources ?? baseState.world.resources;
 
@@ -92,7 +96,10 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
           x: player.position?.x ?? baseState.world.player.position.x,
           y: player.position?.y ?? baseState.world.player.position.y
         },
-        moveIntent: { ...moveIntent }
+        moveIntent: { ...moveIntent },
+        inventory: {
+          item: inventory.item ?? null
+        }
       },
       entities: nextEntities,
       entityTiles,

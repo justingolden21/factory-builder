@@ -18,6 +18,8 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
   let nextMoveIntent = state.world.player.moveIntent;
   let nextEntities = state.world.entities;
   let nextEntityTiles = state.world.entityTiles;
+  let nextPlayer = state.world.player;
+  let nextPlayerInventory = state.world.player.inventory;
   let nextBuild = state.world.build;
   let nextEntityId = state.world.nextEntityId;
   let nextResources = state.world.resources;
@@ -33,11 +35,18 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
     nextEntities = { ...nextEntities };
     nextEntityTiles = { ...nextEntityTiles };
     nextResources = { ...nextResources };
+    nextPlayerInventory = { ...nextPlayerInventory };
+    nextPlayer = {
+      ...nextPlayer,
+      moveIntent: nextMoveIntent,
+      inventory: nextPlayerInventory
+    };
     nextWorld = {
       ...nextWorld,
       build: nextBuild,
       entities: nextEntities,
       entityTiles: nextEntityTiles,
+      player: nextPlayer,
       nextEntityId,
       resources: nextResources
     };
@@ -159,6 +168,64 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         ...entity,
         direction: nextDirection
       };
+    } else if (command.type === 'pickup_from_tile') {
+      if (nextPlayerInventory.item) {
+        continue;
+      }
+
+      const entity = getEntityAt(nextWorld, command.tileX, command.tileY);
+      if (!entity) {
+        continue;
+      }
+
+      if (entity.type === 'chest' && entity.inventory && entity.inventory.amount > 0) {
+        ensureWorldClone();
+        nextPlayerInventory.item = { type: entity.inventory.type, amount: 1 };
+        const nextAmount = entity.inventory.amount - 1;
+        nextEntities[entity.id] = {
+          ...entity,
+          inventory: nextAmount > 0 ? { ...entity.inventory, amount: nextAmount } : null
+        };
+      } else if (entity.type === 'belt' && entity.beltItem) {
+        ensureWorldClone();
+        nextPlayerInventory.item = { ...entity.beltItem };
+        nextEntities[entity.id] = {
+          ...entity,
+          beltItem: null
+        };
+      }
+    } else if (command.type === 'drop_to_tile') {
+      const carried = nextPlayerInventory.item;
+      if (!carried) {
+        continue;
+      }
+
+      const entity = getEntityAt(nextWorld, command.tileX, command.tileY);
+      if (!entity) {
+        continue;
+      }
+
+      if (entity.type === 'chest') {
+        const existing = entity.inventory;
+        if (existing && existing.type !== carried.type) {
+          continue;
+        }
+
+        ensureWorldClone();
+        const nextAmount = (existing?.amount ?? 0) + 1;
+        nextEntities[entity.id] = {
+          ...entity,
+          inventory: { type: carried.type, amount: nextAmount }
+        };
+        nextPlayerInventory.item = null;
+      } else if (entity.type === 'belt' && !entity.beltItem) {
+        ensureWorldClone();
+        nextEntities[entity.id] = {
+          ...entity,
+          beltItem: { type: carried.type, amount: 1 }
+        };
+        nextPlayerInventory.item = null;
+      }
     }
   }
 
@@ -170,10 +237,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
     engine: state.engine,
     world: {
       ...nextWorld,
-      player: {
-        ...state.world.player,
-        moveIntent: nextMoveIntent
-      }
+      player: nextPlayer
     }
   };
 };

@@ -166,21 +166,33 @@ Owns viewport measurement and camera interactions for the bootable game view.
     }
 
     const tool = game.world.build.tool;
-    if (tool === 'none') {
-      const key = resourceKey(hoverTile.x, hoverTile.y);
-      if (!game.world.resources[key]) {
-        return;
-      }
-
-      event.preventDefault();
-      dispatch({ type: 'mine_tile', tileX: hoverTile.x, tileY: hoverTile.y });
-      return;
-    }
-
     const existing = (() => {
       const id = game.world.entityTiles[`${hoverTile.x}:${hoverTile.y}`];
       return id ? game.world.entities[id] ?? null : null;
     })();
+    const carriedItem = game.world.player.inventory.item;
+
+    if (tool === 'none') {
+      if (!carriedItem && existing) {
+        event.preventDefault();
+        dispatch({ type: 'pickup_from_tile', tileX: hoverTile.x, tileY: hoverTile.y });
+        return;
+      }
+
+      if (carriedItem && existing) {
+        event.preventDefault();
+        dispatch({ type: 'drop_to_tile', tileX: hoverTile.x, tileY: hoverTile.y });
+        return;
+      }
+
+      const key = resourceKey(hoverTile.x, hoverTile.y);
+      if (game.world.resources[key]) {
+        event.preventDefault();
+        dispatch({ type: 'mine_tile', tileX: hoverTile.x, tileY: hoverTile.y });
+      }
+
+      return;
+    }
 
     if (tool === 'belt') {
       if (existing?.type === 'belt') {
@@ -258,6 +270,14 @@ Owns viewport measurement and camera interactions for the bootable game view.
       </button>
     {/each}
   </div>
+  <div class="absolute right-3 top-3 z-10 rounded border border-slate-700/60 bg-slate-900/70 px-3 py-2 text-xs text-slate-100">
+    Player Inventory:
+    {#if game.world.player.inventory.item}
+      io x{game.world.player.inventory.item.amount}
+    {:else}
+      empty
+    {/if}
+  </div>
   <svg class="block h-full w-full">
     {#if viewport.width > 0 && viewport.height > 0}
       <g>
@@ -314,12 +334,16 @@ Owns viewport measurement and camera interactions for the bootable game view.
           viewport.height
         )}
         {@const entitySize = camera.zoom * 0.8}
+        {@const isBelt = entity.type === 'belt'}
+        {@const isChest = entity.type === 'chest'}
+        {@const hasItem = isBelt ? !!entity.beltItem : isChest ? (entity.inventory?.amount ?? 0) > 0 : true}
+        {@const fillOpacity = hasItem ? 0.8 : 0.5}
         <rect
           x={entityPos.x - entitySize / 2}
           y={entityPos.y - entitySize / 2}
           width={entitySize}
           height={entitySize}
-          fill="rgba(15, 23, 42, 0.8)"
+          fill={`rgba(15, 23, 42, ${fillOpacity})`}
           stroke="rgba(148, 163, 184, 0.6)"
         />
         <text
@@ -399,6 +423,23 @@ Owns viewport measurement and camera interactions for the bootable game view.
       >
         P
       </text>
+      {#if game.world.player.inventory.item}
+        <circle
+          cx={playerPos.x + camera.zoom * 0.22}
+          cy={playerPos.y - camera.zoom * 0.22}
+          r={camera.zoom * 0.12}
+          fill="rgba(226, 232, 240, 0.9)"
+        />
+        <text
+          x={playerPos.x + camera.zoom * 0.22}
+          y={playerPos.y - camera.zoom * 0.18}
+          text-anchor="middle"
+          font-size={camera.zoom * 0.16}
+          fill="rgba(15, 23, 42, 0.9)"
+        >
+          io
+        </text>
+      {/if}
       {#if hoverTile}
         {@const hoverPos = worldToScreen(hoverTile.x, hoverTile.y, camera, viewport.width, viewport.height)}
         <rect

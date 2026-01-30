@@ -76,4 +76,81 @@ describe('applyCommands', () => {
 
     expect(next).toBe(state);
   });
+
+  it('picks up from belt into player inventory', () => {
+    const state = createGame({
+      world: {
+        entities: {
+          belt: {
+            id: 'belt',
+            type: 'belt',
+            position: { x: 1.5, y: 1.5 },
+            direction: 'east',
+            beltItem: { type: 'iron_ore', amount: 1 }
+          }
+        },
+        entityTiles: {
+          '1:1': 'belt'
+        }
+      }
+    });
+
+    const next = applyCommands(state, [{ type: 'pickup_from_tile', tileX: 1, tileY: 1 }]);
+
+    expect(next.world.player.inventory.item?.amount).toBe(1);
+    expect(next.world.entities['belt']?.beltItem).toBeNull();
+  });
+
+  it('drops into chest from player inventory', () => {
+    const state = createGame({
+      world: {
+        player: {
+          inventory: { item: { type: 'iron_ore', amount: 1 } }
+        },
+        entities: {
+          chest: {
+            id: 'chest',
+            type: 'chest',
+            position: { x: 2.5, y: 2.5 },
+            direction: 'north',
+            inventory: { type: 'iron_ore', amount: 2 }
+          }
+        },
+        entityTiles: {
+          '2:2': 'chest'
+        }
+      }
+    });
+
+    const next = applyCommands(state, [{ type: 'drop_to_tile', tileX: 2, tileY: 2 }]);
+
+    expect(next.world.player.inventory.item).toBeNull();
+    expect(next.world.entities['chest']?.inventory?.amount).toBe(3);
+  });
+
+  it('no-ops pickup when inventory is full', () => {
+    const state = createGame({
+      world: {
+        player: {
+          inventory: { item: { type: 'iron_ore', amount: 1 } }
+        },
+        entities: {
+          belt: {
+            id: 'belt',
+            type: 'belt',
+            position: { x: 4.5, y: 4.5 },
+            direction: 'east',
+            beltItem: { type: 'iron_ore', amount: 1 }
+          }
+        },
+        entityTiles: {
+          '4:4': 'belt'
+        }
+      }
+    });
+
+    const next = applyCommands(state, [{ type: 'pickup_from_tile', tileX: 4, tileY: 4 }]);
+
+    expect(next).toBe(state);
+  });
 });

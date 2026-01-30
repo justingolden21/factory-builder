@@ -66,7 +66,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
         continue;
       }
 
-      plannedMoves.push({ fromId: entity.id, toId: target.id, item: entity.beltItem });
+      plannedMoves.push({ fromId: entity.id, toId: target.id, item: { ...entity.beltItem } });
       blockedTargets.add(target.id);
     }
 
@@ -90,7 +90,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
       };
       nextEntities[move.toId] = {
         ...to,
-        beltItem: move.item
+        beltItem: { ...move.item }
       };
     }
   }

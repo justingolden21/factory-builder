@@ -19,9 +19,13 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
         left: false,
         right: false
       },
+      inventory: {
+        item: null
+      },
       ...overrides.player
     },
     entities: {},
+    entityTiles: {},
     build: {
       tool: 'none'
     },

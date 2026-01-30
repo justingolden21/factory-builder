@@ -25,6 +25,7 @@ export type PlayerState = {
     left: boolean;
     right: boolean;
   };
+  inventory: PlayerInventory;
 };
 
 export type BuildTool = 'none' | 'belt' | 'drill' | 'chest' | 'inserter';
@@ -45,6 +46,10 @@ export type ItemType = 'iron_ore';
 export type ItemStack = {
   type: ItemType;
   amount: number;
+};
+
+export type PlayerInventory = {
+  item?: ItemStack | null;
 };
 
 export type EntityState = {

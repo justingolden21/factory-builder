@@ -36,4 +36,14 @@ export type GameCommand =
       type: 'rotate_entity';
       tileX: number;
       tileY: number;
+    }
+  | {
+      type: 'pickup_from_tile';
+      tileX: number;
+      tileY: number;
+    }
+  | {
+      type: 'drop_to_tile';
+      tileX: number;
+      tileY: number;
     };

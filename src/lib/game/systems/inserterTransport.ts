@@ -86,7 +86,7 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
         };
         nextEntities[output.id] = {
           ...output,
-          beltItem: item
+          beltItem: { ...item }
         };
       } else if (output.type === 'chest') {
         const existing = output.inventory;
