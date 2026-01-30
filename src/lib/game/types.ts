@@ -15,6 +15,8 @@ export type EntityId = string;
 
 export type EntityType = 'belt' | 'drill' | 'chest' | 'inserter' | 'splitter';
 
+export type TileKey = string;
+
 export type PlayerState = {
   position: Vec2;
   moveIntent: {
@@ -59,6 +61,7 @@ export type WorldState = {
   tick: number;
   player: PlayerState;
   entities: Record<EntityId, EntityState>;
+  entityTiles: Record<TileKey, EntityId>;
   build: BuildState;
   nextEntityId: number;
   resources: Record<string, ResourceTile>;

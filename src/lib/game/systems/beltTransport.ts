@@ -5,6 +5,7 @@ Moves a single item between belt tiles each tick in a deterministic order.
 */
 
 import type { ItemStack, WorldState } from '$lib/game/types';
+import { getEntityAt, tileOfEntity } from '$lib/game/world/tiles';
 
 type DirectionDelta = {
   x: number;
@@ -17,8 +18,6 @@ const directionDeltas: Record<string, DirectionDelta> = {
   south: { x: 0, y: 1 },
   west: { x: -1, y: 0 }
 };
-
-const tileKey = (x: number, y: number) => `${x}:${y}`;
 
 export const applyBeltTransport = (world: WorldState, ticks: number): WorldState => {
   if (ticks <= 0) {
@@ -46,16 +45,6 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
     const plannedMoves: Array<{ fromId: string; toId: string; item: ItemStack }> = [];
     const blockedTargets = new Set<string>();
     const entityKeys = Object.keys(nextEntities).sort();
-    const tileMap = new Map<string, string>();
-
-    for (const id of entityKeys) {
-      const entity = nextEntities[id];
-      if (!entity || entity.type !== 'belt') {
-        continue;
-      }
-
-      tileMap.set(tileKey(Math.floor(entity.position.x), Math.floor(entity.position.y)), id);
-    }
 
     for (const id of entityKeys) {
       const entity = nextEntities[id];
@@ -68,11 +57,10 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
         continue;
       }
 
-      const targetX = Math.floor(entity.position.x) + delta.x;
-      const targetY = Math.floor(entity.position.y) + delta.y;
-
-      const targetId = tileMap.get(tileKey(targetX, targetY));
-      const target = targetId ? nextEntities[targetId] : null;
+      const tile = tileOfEntity(entity);
+      const targetX = tile.x + delta.x;
+      const targetY = tile.y + delta.y;
+      const target = getEntityAt(nextWorld, targetX, targetY);
 
       if (!target || target.beltItem || blockedTargets.has(target.id)) {
         continue;

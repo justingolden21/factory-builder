@@ -177,11 +177,12 @@ Owns viewport measurement and camera interactions for the bootable game view.
       return;
     }
 
-    if (tool === 'belt') {
-      const existing = Object.values(game.world.entities).find((entity) => {
-        return Math.floor(entity.position.x) === hoverTile.x && Math.floor(entity.position.y) === hoverTile.y;
-      });
+    const existing = (() => {
+      const id = game.world.entityTiles[`${hoverTile.x}:${hoverTile.y}`];
+      return id ? game.world.entities[id] ?? null : null;
+    })();
 
+    if (tool === 'belt') {
       if (existing?.type === 'belt') {
         event.preventDefault();
         dispatch({ type: 'rotate_entity', tileX: hoverTile.x, tileY: hoverTile.y });
@@ -190,10 +191,6 @@ Owns viewport measurement and camera interactions for the bootable game view.
     }
 
     if (tool === 'inserter') {
-      const existing = Object.values(game.world.entities).find((entity) => {
-        return Math.floor(entity.position.x) === hoverTile.x && Math.floor(entity.position.y) === hoverTile.y;
-      });
-
       if (existing?.type === 'inserter') {
         event.preventDefault();
         dispatch({ type: 'rotate_entity', tileX: hoverTile.x, tileY: hoverTile.y });

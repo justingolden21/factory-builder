@@ -17,6 +17,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
       moveIntent: { up: false, down: false, left: false, right: false }
     },
     entities: {},
+    entityTiles: {},
     build: { tool: 'none' },
     nextEntityId: 1,
     resources: {},
@@ -34,6 +35,9 @@ describe('drill mining', () => {
           position: { x: 1.5, y: 1.5 },
           direction: 'north'
         }
+      },
+      entityTiles: {
+        '1:1': '1'
       },
       resources: {
         [resourceKey(1, 1)]: { type: 'iron_ore', amount: 100 }
@@ -56,6 +60,9 @@ describe('drill mining', () => {
           direction: 'north'
         }
       },
+      entityTiles: {
+        '2:2': '1'
+      },
       resources: {
         [resourceKey(2, 2)]: { type: 'iron_ore', amount: 1 }
       }
@@ -77,6 +84,9 @@ describe('drill mining', () => {
           direction: 'north',
           inventory: { type: 'iron_ore', amount: 50 }
         }
+      },
+      entityTiles: {
+        '3:3': '1'
       },
       resources: {
         [resourceKey(3, 3)]: { type: 'iron_ore', amount: 100 }
@@ -111,6 +121,10 @@ describe('drill mining', () => {
           position: { x: 5.5, y: 4.5 },
           direction: 'east'
         }
+      },
+      entityTiles: {
+        '4:4': '1',
+        '5:4': '2'
       },
       resources: {
         [resourceKey(4, 4)]: { type: 'iron_ore', amount: 100 }

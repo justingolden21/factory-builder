@@ -10,6 +10,7 @@ import { applyDrillMining } from '$lib/game/systems/drillMining';
 import { applyInserterTransport } from '$lib/game/systems/inserterTransport';
 import { applyPlayerMovement } from '$lib/game/systems/playerMovement';
 import { resourceKey } from '$lib/game/world/resources';
+import { tileKey, tileOfEntity } from '$lib/game/world/tiles';
 
 const FIXED_STEP_MS = 50;
 const SEED_RESOURCE_AMOUNT = 100;
@@ -42,6 +43,7 @@ const baseState: GameState = {
       }
     },
     entities: {},
+    entityTiles: {},
     build: {
       tool: 'none'
     },
@@ -58,6 +60,27 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
   const build = world.build ?? baseState.world.build;
   const resources = world.resources ?? baseState.world.resources;
 
+  const mergedEntities = { ...baseState.world.entities, ...(world.entities ?? {}) };
+  const entityTiles: GameState['world']['entityTiles'] = {};
+  const nextEntities: GameState['world']['entities'] = {};
+  const entityIds = Object.keys(mergedEntities).sort();
+
+  for (const id of entityIds) {
+    const entity = mergedEntities[id];
+    if (!entity) {
+      continue;
+    }
+
+    const tile = tileOfEntity(entity);
+    const key = tileKey(tile.x, tile.y);
+    if (entityTiles[key]) {
+      continue;
+    }
+
+    entityTiles[key] = id;
+    nextEntities[id] = entity;
+  }
+
   return {
     engine: {
       accumulatorMs: engine.accumulatorMs ?? baseState.engine.accumulatorMs
@@ -71,7 +94,8 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
         },
         moveIntent: { ...moveIntent }
       },
-      entities: { ...baseState.world.entities, ...(world.entities ?? {}) },
+      entities: nextEntities,
+      entityTiles,
       build: {
         tool: build.tool ?? baseState.world.build.tool
       },

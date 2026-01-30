@@ -7,6 +7,7 @@ Applies queued input commands to state while keeping the engine deterministic.
 import type { GameCommand } from '$lib/game/engine/commands';
 import type { EntityState, GameState } from '$lib/game/types';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
+import { getEntityAt, tileKey, tileOfEntity } from '$lib/game/world/tiles';
 
 export const applyCommands = (state: GameState, commands: GameCommand[]): GameState => {
   if (commands.length === 0) {
@@ -16,6 +17,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
   let nextWorld = state.world;
   let nextMoveIntent = state.world.player.moveIntent;
   let nextEntities = state.world.entities;
+  let nextEntityTiles = state.world.entityTiles;
   let nextBuild = state.world.build;
   let nextEntityId = state.world.nextEntityId;
   let nextResources = state.world.resources;
@@ -29,11 +31,13 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
     nextBuild = { ...nextBuild };
     nextMoveIntent = { ...nextMoveIntent };
     nextEntities = { ...nextEntities };
+    nextEntityTiles = { ...nextEntityTiles };
     nextResources = { ...nextResources };
     nextWorld = {
       ...nextWorld,
       build: nextBuild,
       entities: nextEntities,
+      entityTiles: nextEntityTiles,
       nextEntityId,
       resources: nextResources
     };
@@ -41,13 +45,8 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
   };
 
   const findEntityAt = (tileX: number, tileY: number): EntityState | null => {
-    for (const entity of Object.values(nextEntities)) {
-      if (Math.floor(entity.position.x) === tileX && Math.floor(entity.position.y) === tileY) {
-        return entity;
-      }
-    }
-
-    return null;
+    const id = nextEntityTiles[tileKey(tileX, tileY)];
+    return id ? nextEntities[id] ?? null : null;
   };
 
   for (const command of commands) {
@@ -75,10 +74,10 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
 
       if (command.entityType === 'inserter') {
         const neighbors = [
-          findEntityAt(command.tileX, command.tileY - 1),
-          findEntityAt(command.tileX + 1, command.tileY),
-          findEntityAt(command.tileX, command.tileY + 1),
-          findEntityAt(command.tileX - 1, command.tileY)
+          getEntityAt(nextWorld, command.tileX, command.tileY - 1),
+          getEntityAt(nextWorld, command.tileX + 1, command.tileY),
+          getEntityAt(nextWorld, command.tileX, command.tileY + 1),
+          getEntityAt(nextWorld, command.tileX - 1, command.tileY)
         ];
         const hasValidNeighbor = neighbors.some(
           (neighbor) => neighbor?.type === 'belt' || neighbor?.type === 'chest'
@@ -102,6 +101,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         direction: 'north'
       };
       nextEntities[id] = entity;
+      nextEntityTiles[tileKey(command.tileX, command.tileY)] = id;
       nextEntityId += 1;
       nextWorld = {
         ...nextWorld,
@@ -115,6 +115,8 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
 
       ensureWorldClone();
       delete nextEntities[existing.id];
+      const tile = tileOfEntity(existing);
+      delete nextEntityTiles[tileKey(tile.x, tile.y)];
     } else if (command.type === 'mine_tile') {
       const resource = getResourceAt(nextWorld, command.tileX, command.tileY);
       if (!resource) {

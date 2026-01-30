@@ -6,6 +6,7 @@ Consumes resource tiles under drills and fills a small internal buffer over time
 
 import type { ItemStack, WorldState } from '$lib/game/types';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
+import { getEntityAt } from '$lib/game/world/tiles';
 
 const FIXED_STEP_MS = 50;
 const DRILL_MINE_RATE = 1;
@@ -91,15 +92,9 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
     if (delta && nextInventory.amount > 0) {
       const outputX = tileX + delta.x;
       const outputY = tileY + delta.y;
-      const target = Object.values(nextEntities).find((candidate) => {
-        if (candidate.type !== 'belt' || candidate.beltItem) {
-          return false;
-        }
+      const target = getEntityAt(nextWorld, outputX, outputY);
 
-        return Math.floor(candidate.position.x) === outputX && Math.floor(candidate.position.y) === outputY;
-      });
-
-      if (target) {
+      if (target && target.type === 'belt' && !target.beltItem) {
         nextInventory = {
           ...nextInventory,
           amount: nextInventory.amount - 1

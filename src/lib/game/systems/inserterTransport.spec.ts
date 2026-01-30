@@ -16,6 +16,7 @@ const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
       moveIntent: { up: false, down: false, left: false, right: false }
     },
     entities: {},
+    entityTiles: {},
     build: { tool: 'none' },
     nextEntityId: 1,
     resources: {},
@@ -46,6 +47,11 @@ describe('inserter transport', () => {
           position: { x: 2.5, y: 0.5 },
           direction: 'east'
         }
+      },
+      entityTiles: {
+        '0:0': 'beltIn',
+        '1:0': 'inserter',
+        '2:0': 'beltOut'
       }
     });
 
@@ -78,6 +84,11 @@ describe('inserter transport', () => {
           direction: 'north',
           inventory: { type: 'iron_ore', amount: 2 }
         }
+      },
+      entityTiles: {
+        '0:1': 'beltIn',
+        '1:1': 'inserter',
+        '2:1': 'chest'
       }
     });
 
@@ -103,6 +114,10 @@ describe('inserter transport', () => {
           position: { x: 1.5, y: 2.5 },
           direction: 'east'
         }
+      },
+      entityTiles: {
+        '0:2': 'beltIn',
+        '1:2': 'inserter'
       }
     });
 
@@ -146,6 +161,13 @@ describe('inserter transport', () => {
           position: { x: 2.5, y: 3.5 },
           direction: 'east'
         }
+      },
+      entityTiles: {
+        '0:3': 'beltA',
+        '0:4': 'beltB',
+        '1:3': 'inserterA',
+        '1:4': 'inserterB',
+        '2:3': 'beltOut'
       }
     });
 

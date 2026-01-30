@@ -36,6 +36,7 @@ describe('applyCommands', () => {
     ]);
 
     expect(next).toBe(state);
+    expect(state.world.entityTiles['1:1']).toBeDefined();
     expect(Object.keys(next.world.entities)).toHaveLength(1);
   });
 
@@ -53,6 +54,18 @@ describe('applyCommands', () => {
     const next = applyCommands(state, [{ type: 'select_tool', tool: 'none' }]);
 
     expect(next).toBe(state);
+  });
+
+  it('updates entityTiles on place and remove', () => {
+    const placed = applyCommands(createGame(), [
+      { type: 'place_entity', entityType: 'belt', tileX: 3, tileY: 3 }
+    ]);
+
+    expect(placed.world.entityTiles['3:3']).toBeDefined();
+
+    const removed = applyCommands(placed, [{ type: 'remove_entity', tileX: 3, tileY: 3 }]);
+
+    expect(removed.world.entityTiles['3:3']).toBeUndefined();
   });
 
   it('does not place inserter without valid neighbor', () => {
