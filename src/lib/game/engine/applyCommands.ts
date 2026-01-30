@@ -147,7 +147,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
       }
     } else if (command.type === 'rotate_entity') {
       const entity = findEntityAt(command.tileX, command.tileY);
-      if (!entity || (entity.type !== 'belt' && entity.type !== 'inserter')) {
+      if (!entity || (entity.type !== 'belt' && entity.type !== 'inserter' && entity.type !== 'drill')) {
         continue;
       }
 

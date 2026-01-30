@@ -15,6 +15,12 @@ Owns viewport measurement and camera interactions for the bootable game view.
   let { game, dispatch } = $props<{ game: GameState; dispatch: (command: GameCommand) => void }>();
 
   const tools = ['none', 'belt', 'drill', 'chest', 'inserter'] as const;
+  const directionDeltas = {
+    north: { x: 0, y: -1 },
+    east: { x: 1, y: 0 },
+    south: { x: 0, y: 1 },
+    west: { x: -1, y: 0 }
+  } as const;
 
   let wrapper: HTMLDivElement | null = $state(null);
   let viewport = $state({ width: 0, height: 0 });
@@ -91,6 +97,21 @@ Owns viewport measurement and camera interactions for the bootable game view.
     }
 
     return hoveredEntity;
+  });
+
+  const hoveredDrillOutput = $derived.by(() => {
+    if (!hoveredEntity || hoveredEntity.type !== 'drill') {
+      return null;
+    }
+
+    const tileX = Math.floor(hoveredEntity.position.x);
+    const tileY = Math.floor(hoveredEntity.position.y);
+    const delta = directionDeltas[hoveredEntity.direction];
+
+    return {
+      x: tileX + delta.x,
+      y: tileY + delta.y
+    };
   });
 
   const handlePointerDown = (event: PointerEvent) => {
@@ -222,6 +243,14 @@ Owns viewport measurement and camera interactions for the bootable game view.
       }
     }
 
+    if (tool === 'drill') {
+      if (existing?.type === 'drill') {
+        event.preventDefault();
+        dispatch({ type: 'rotate_entity', tileX: hoverTile.x, tileY: hoverTile.y });
+        return;
+      }
+    }
+
     if (tool === 'inserter') {
       if (existing?.type === 'inserter') {
         event.preventDefault();
@@ -307,6 +336,14 @@ Owns viewport measurement and camera interactions for the bootable game view.
       {chestAmount > 0 ? `Chest: io x${chestAmount}` : 'Chest: empty'}
     </div>
   {/if}
+  {#if hoveredDrillOutput && hoverScreen}
+    <div
+      class="pointer-events-none absolute z-20 rounded border border-slate-700/60 bg-slate-900/80 px-2 py-1 text-xs text-slate-100"
+      style={`left: ${hoverScreen.x + 12}px; top: ${hoverScreen.y + 12}px;`}
+    >
+      Drill output: ({hoveredDrillOutput.x}, {hoveredDrillOutput.y})
+    </div>
+  {/if}
   <svg class="block h-full w-full">
     {#if viewport.width > 0 && viewport.height > 0}
       <g>
@@ -390,7 +427,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
                 ? 'i'
                 : 'c'}
         </text>
-        {#if entity.type === 'belt' || entity.type === 'inserter'}
+        {#if entity.type === 'belt' || entity.type === 'inserter' || entity.type === 'drill'}
           {@const arrowSize = entitySize * 0.24}
           {@const arrowPoints =
             entity.direction === 'north'

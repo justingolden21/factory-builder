@@ -68,6 +68,13 @@ describe('applyCommands', () => {
     expect(removed.world.entityTiles['3:3']).toBeUndefined();
   });
 
+  it('rotates drills', () => {
+    const placed = runCommands([{ type: 'place_entity', entityType: 'drill', tileX: 2, tileY: 2 }]);
+    const rotated = applyCommands(placed, [{ type: 'rotate_entity', tileX: 2, tileY: 2 }]);
+
+    expect(rotated.world.entities['1']?.direction).toBe('east');
+  });
+
   it('does not place inserter without valid neighbor', () => {
     const state = createGame({ world: { resources: {} } });
     const next = applyCommands(state, [

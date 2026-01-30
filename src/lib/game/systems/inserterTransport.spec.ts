@@ -5,8 +5,11 @@ Validates deterministic inserter item movement.
 */
 
 import { describe, expect, it } from 'vitest';
+import { applyBeltTransport } from '$lib/game/systems/beltTransport';
+import { applyDrillMining } from '$lib/game/systems/drillMining';
 import { applyInserterTransport } from '$lib/game/systems/inserterTransport';
 import type { WorldState } from '$lib/game/types';
+import { resourceKey } from '$lib/game/world/resources';
 
 const createWorld = (overrides: Partial<WorldState> = {}): WorldState => {
   return {
@@ -134,6 +137,60 @@ describe('inserter transport', () => {
 
     expect(next.entities['beltIn']?.beltItem?.amount).toBe(1);
     expect(next.entities['chest']?.inventory?.amount).toBe(2);
+  });
+
+  it('moves drill output through belts into chest', () => {
+    const world = createWorld({
+      entities: {
+        drill: {
+          id: 'drill',
+          type: 'drill',
+          position: { x: 0.5, y: 0.5 },
+          direction: 'east',
+          inventory: { type: 'iron_ore', amount: 1 }
+        },
+        beltA: {
+          id: 'beltA',
+          type: 'belt',
+          position: { x: 1.5, y: 0.5 },
+          direction: 'east'
+        },
+        beltB: {
+          id: 'beltB',
+          type: 'belt',
+          position: { x: 2.5, y: 0.5 },
+          direction: 'east'
+        },
+        inserter: {
+          id: 'inserter',
+          type: 'inserter',
+          position: { x: 3.5, y: 0.5 },
+          direction: 'east'
+        },
+        chest: {
+          id: 'chest',
+          type: 'chest',
+          position: { x: 4.5, y: 0.5 },
+          direction: 'north'
+        }
+      },
+      entityTiles: {
+        '0:0': 'drill',
+        '1:0': 'beltA',
+        '2:0': 'beltB',
+        '3:0': 'inserter',
+        '4:0': 'chest'
+      },
+      resources: {
+        [resourceKey(0, 0)]: { type: 'iron_ore', amount: 1 }
+      }
+    });
+
+    const afterMining = applyDrillMining(world, 1);
+    const afterBelts = applyBeltTransport(afterMining, 1);
+    const afterInserter = applyInserterTransport(afterBelts, 1);
+
+    expect(afterInserter.entities['chest']?.inventory?.amount ?? 0).toBe(1);
   });
 
   it('does nothing when output is invalid', () => {
