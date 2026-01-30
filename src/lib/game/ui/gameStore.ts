@@ -4,6 +4,8 @@ Game UI store and loop coordinator.
 Connects the deterministic engine to the UI layer through a minimal store interface.
 */
 
+import { applyCommands } from '$lib/game/engine/applyCommands';
+import type { GameCommand } from '$lib/game/engine/commands';
 import { createGame, stepGame } from '$lib/game/engine';
 import type { GameState } from '$lib/game/types';
 
@@ -12,6 +14,7 @@ type Subscriber = (state: GameState) => void;
 type GameStore = {
   getState: () => GameState;
   subscribe: (run: Subscriber) => () => void;
+  dispatch: (command: GameCommand) => void;
   start: () => () => void;
   stop: () => void;
 };
@@ -19,6 +22,7 @@ type GameStore = {
 export const createGameStore = (): GameStore => {
   let state = createGame();
   const subscribers = new Set<Subscriber>();
+  let pending: GameCommand[] = [];
   let frameId: number | null = null;
   let lastTime = 0;
 
@@ -27,7 +31,11 @@ export const createGameStore = (): GameStore => {
   };
 
   const update = (dtMs: number) => {
-    const next = stepGame(state, dtMs);
+    const commands = pending;
+    pending = [];
+
+    const afterCommands = applyCommands(state, commands);
+    const next = stepGame(afterCommands, dtMs);
 
     if (next === state) {
       return;
@@ -80,6 +88,9 @@ export const createGameStore = (): GameStore => {
   return {
     getState: () => state,
     subscribe,
+    dispatch: (command) => {
+      pending = [...pending, command];
+    },
     start,
     stop
   };

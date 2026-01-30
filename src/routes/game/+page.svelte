@@ -35,5 +35,5 @@ Displays the engine status and current tick for the minimal game loop.
 <h1>Game boot OK</h1>
 <p>Tick: {game.world.tick}</p>
 <div class="mt-4 h-[70vh] w-full">
-  <GameView {game} />
+  <GameView {game} dispatch={gameStore.dispatch} />
 </div>

@@ -5,6 +5,7 @@ Owns game state creation and the fixed-timestep simulation loop.
 */
 
 import type { GameState } from '$lib/game/types';
+import { applyPlayerMovement } from '$lib/game/systems/playerMovement';
 
 const FIXED_STEP_MS = 50;
 
@@ -15,7 +16,13 @@ const baseState: GameState = {
   world: {
     tick: 0,
     player: {
-      position: { x: 0, y: 0 }
+      position: { x: 0, y: 0 },
+      moveIntent: {
+        up: false,
+        down: false,
+        left: false,
+        right: false
+      }
     },
     entities: {}
   }
@@ -25,6 +32,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
   const engine = initial.engine ?? {};
   const world = initial.world ?? {};
   const player = world.player ?? {};
+  const moveIntent = player.moveIntent ?? baseState.world.player.moveIntent;
 
   return {
     engine: {
@@ -36,7 +44,8 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
         position: {
           x: player.position?.x ?? baseState.world.player.position.x,
           y: player.position?.y ?? baseState.world.player.position.y
-        }
+        },
+        moveIntent: { ...moveIntent }
       },
       entities: { ...baseState.world.entities, ...(world.entities ?? {}) }
     }
@@ -46,37 +55,39 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
 export const stepGame = (state: GameState, dtMs: number): GameState => {
   const safeDt = Math.max(0, dtMs);
 
-  let accumulatorMs = state.engine.accumulatorMs + safeDt;
-
-  let ticks = 0;
-  while (accumulatorMs >= FIXED_STEP_MS) {
-    accumulatorMs -= FIXED_STEP_MS;
-    ticks += 1;
-  }
+  const nextAccumulator = state.engine.accumulatorMs + safeDt;
+  const ticks = Math.floor(nextAccumulator / FIXED_STEP_MS);
+  const remainder = nextAccumulator - ticks * FIXED_STEP_MS;
 
   if (ticks === 0) {
-    if (accumulatorMs === state.engine.accumulatorMs) {
+    if (remainder === state.engine.accumulatorMs) {
       return state;
     }
 
     return {
       engine: {
-        accumulatorMs
+        accumulatorMs: remainder
       },
       world: state.world
     };
   }
 
+  const movedWorld = applyPlayerMovement(state.world, ticks);
+  const nextWorldBase = movedWorld === state.world ? state.world : movedWorld;
+
   return {
     engine: {
-      accumulatorMs
+      accumulatorMs: remainder
     },
     world: {
+      ...nextWorldBase,
       tick: state.world.tick + ticks,
       player: {
-        position: { ...state.world.player.position }
+        ...nextWorldBase.player,
+        position: { ...nextWorldBase.player.position },
+        moveIntent: { ...nextWorldBase.player.moveIntent }
       },
-      entities: { ...state.world.entities }
+      entities: { ...nextWorldBase.entities }
     }
   };
 };

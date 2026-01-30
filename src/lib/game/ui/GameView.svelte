@@ -5,12 +5,13 @@ Owns viewport measurement and camera interactions for the bootable game view.
 -->
 
 <script lang="ts">
+  import type { GameCommand } from '$lib/game/engine/commands';
   import type { GameState } from '$lib/game/types';
   import type { Camera } from '$lib/game/world/camera';
   import { clampZoom, screenToWorld, worldToScreen } from '$lib/game/world/camera';
   import { getVisibleTileBounds } from '$lib/game/world/grid';
 
-  let { game } = $props<{ game: GameState }>();
+  let { game, dispatch } = $props<{ game: GameState; dispatch: (command: GameCommand) => void }>();
 
   let wrapper: HTMLDivElement | null = $state(null);
   let viewport = $state({ width: 0, height: 0 });
@@ -23,6 +24,8 @@ Owns viewport measurement and camera interactions for the bootable game view.
     if (!wrapper) {
       return;
     }
+
+    wrapper.focus({ preventScroll: true });
 
     const updateSize = () => {
       const rect = wrapper?.getBoundingClientRect();
@@ -127,18 +130,47 @@ Owns viewport measurement and camera interactions for the bootable game view.
       zoom: clampZoom(camera.zoom * zoomFactor)
     };
   };
+
+  const handleKey = (event: KeyboardEvent, isDown: boolean) => {
+    const key = event.key.toLowerCase();
+    const dir =
+      key === 'w' || key === 'arrowup'
+        ? 'up'
+        : key === 's' || key === 'arrowdown'
+          ? 'down'
+          : key === 'a' || key === 'arrowleft'
+            ? 'left'
+            : key === 'd' || key === 'arrowright'
+              ? 'right'
+              : null;
+
+    if (!dir) {
+      return;
+    }
+
+    if (isDown && event.repeat) {
+      return;
+    }
+
+    event.preventDefault();
+    dispatch({ type: 'move_intent', dir, isDown });
+  };
 </script>
 
 <div
   class="h-full w-full"
   bind:this={wrapper}
   role="application"
+  tabindex="0"
+  aria-label="Game view"
   oncontextmenu={(event) => event.preventDefault()}
   onpointerdown={handlePointerDown}
   onpointermove={handlePointerMove}
   onpointerup={handlePointerUp}
   onpointerleave={handlePointerLeave}
   onwheel={handleWheel}
+  onkeydown={(event) => handleKey(event, true)}
+  onkeyup={(event) => handleKey(event, false)}
 >
   <svg class="block h-full w-full">
     {#if viewport.width > 0 && viewport.height > 0}

@@ -17,6 +17,12 @@ export type EntityType = 'belt' | 'drill' | 'chest' | 'inserter' | 'splitter';
 
 export type PlayerState = {
   position: Vec2;
+  moveIntent: {
+    up: boolean;
+    down: boolean;
+    left: boolean;
+    right: boolean;
+  };
 };
 
 export type EntityState = {
