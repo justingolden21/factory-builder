@@ -177,6 +177,18 @@ Owns viewport measurement and camera interactions for the bootable game view.
       return;
     }
 
+    if (tool === 'belt') {
+      const existing = Object.values(game.world.entities).find((entity) => {
+        return Math.floor(entity.position.x) === hoverTile.x && Math.floor(entity.position.y) === hoverTile.y;
+      });
+
+      if (existing?.type === 'belt') {
+        event.preventDefault();
+        dispatch({ type: 'rotate_entity', tileX: hoverTile.x, tileY: hoverTile.y });
+        return;
+      }
+    }
+
     event.preventDefault();
     dispatch({ type: 'place_entity', entityType: tool, tileX: hoverTile.x, tileY: hoverTile.y });
   };
@@ -310,6 +322,29 @@ Owns viewport measurement and camera interactions for the bootable game view.
         >
           {entity.type === 'belt' ? 'b' : entity.type === 'drill' ? 'd' : 'c'}
         </text>
+        {#if entity.type === 'belt'}
+          {@const arrowSize = entitySize * 0.24}
+          {@const arrowPoints =
+            entity.direction === 'north'
+              ? `${entityPos.x},${entityPos.y - arrowSize} ${entityPos.x - arrowSize * 0.6},${entityPos.y + arrowSize * 0.4} ${entityPos.x + arrowSize * 0.6},${entityPos.y + arrowSize * 0.4}`
+              : entity.direction === 'east'
+                ? `${entityPos.x + arrowSize},${entityPos.y} ${entityPos.x - arrowSize * 0.4},${entityPos.y - arrowSize * 0.6} ${entityPos.x - arrowSize * 0.4},${entityPos.y + arrowSize * 0.6}`
+                : entity.direction === 'south'
+                  ? `${entityPos.x},${entityPos.y + arrowSize} ${entityPos.x - arrowSize * 0.6},${entityPos.y - arrowSize * 0.4} ${entityPos.x + arrowSize * 0.6},${entityPos.y - arrowSize * 0.4}`
+                  : `${entityPos.x - arrowSize},${entityPos.y} ${entityPos.x + arrowSize * 0.4},${entityPos.y - arrowSize * 0.6} ${entityPos.x + arrowSize * 0.4},${entityPos.y + arrowSize * 0.6}`}\n          <polygon points={arrowPoints} fill="rgba(226, 232, 240, 0.8)" />
+          {#if entity.beltItem}
+            <circle cx={entityPos.x} cy={entityPos.y} r={entitySize * 0.18} fill="rgba(226, 232, 240, 0.9)" />
+            <text
+              x={entityPos.x}
+              y={entityPos.y + entitySize * 0.08}
+              text-anchor="middle"
+              font-size={entitySize * 0.18}
+              fill="rgba(15, 23, 42, 0.9)"
+            >
+              io
+            </text>
+          {/if}
+        {/if}
         {#if entity.type === 'drill'}
           <text
             x={entityPos.x}

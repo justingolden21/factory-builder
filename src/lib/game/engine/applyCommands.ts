@@ -117,6 +117,30 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
       } else {
         nextResources[key] = { ...resource, amount: nextAmount };
       }
+    } else if (command.type === 'rotate_entity') {
+      const entity = findEntityAt(command.tileX, command.tileY);
+      if (!entity || entity.type !== 'belt') {
+        continue;
+      }
+
+      const nextDirection =
+        entity.direction === 'north'
+          ? 'east'
+          : entity.direction === 'east'
+            ? 'south'
+            : entity.direction === 'south'
+              ? 'west'
+              : 'north';
+
+      if (nextDirection === entity.direction) {
+        continue;
+      }
+
+      ensureWorldClone();
+      nextEntities[entity.id] = {
+        ...entity,
+        direction: nextDirection
+      };
     }
   }
 

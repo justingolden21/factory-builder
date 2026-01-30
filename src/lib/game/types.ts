@@ -52,6 +52,7 @@ export type EntityState = {
   direction: Direction;
   inventory?: ItemStack | null;
   miningProgress?: number;
+  beltItem?: ItemStack | null;
 };
 
 export type WorldState = {

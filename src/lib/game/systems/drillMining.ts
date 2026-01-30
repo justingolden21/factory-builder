@@ -10,6 +10,12 @@ import { getResourceAt, resourceKey } from '$lib/game/world/resources';
 const FIXED_STEP_MS = 50;
 const DRILL_MINE_RATE = 1;
 const DRILL_BUFFER_CAPACITY = 50;
+const directionDeltas: Record<string, { x: number; y: number }> = {
+  north: { x: 0, y: -1 },
+  east: { x: 1, y: 0 },
+  south: { x: 0, y: 1 },
+  west: { x: -1, y: 0 }
+};
 
 export const applyDrillMining = (world: WorldState, ticks: number): WorldState => {
   if (ticks <= 0) {
@@ -76,10 +82,34 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
 
     ensureWorldClone();
 
-    const nextInventory: ItemStack = {
+    let nextInventory: ItemStack = {
       type: inventory.type,
       amount: inventory.amount + mined
     };
+
+    const delta = directionDeltas[entity.direction];
+    if (delta && nextInventory.amount > 0) {
+      const outputX = tileX + delta.x;
+      const outputY = tileY + delta.y;
+      const target = Object.values(nextEntities).find((candidate) => {
+        if (candidate.type !== 'belt' || candidate.beltItem) {
+          return false;
+        }
+
+        return Math.floor(candidate.position.x) === outputX && Math.floor(candidate.position.y) === outputY;
+      });
+
+      if (target) {
+        nextInventory = {
+          ...nextInventory,
+          amount: nextInventory.amount - 1
+        };
+        nextEntities[target.id] = {
+          ...target,
+          beltItem: { type: nextInventory.type, amount: 1 }
+        };
+      }
+    }
 
     nextEntities[entity.id] = {
       ...entity,

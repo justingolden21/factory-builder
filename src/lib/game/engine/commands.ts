@@ -31,4 +31,9 @@ export type GameCommand =
       type: 'mine_tile';
       tileX: number;
       tileY: number;
+    }
+  | {
+      type: 'rotate_entity';
+      tileX: number;
+      tileY: number;
     };

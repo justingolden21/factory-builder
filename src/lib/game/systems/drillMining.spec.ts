@@ -94,4 +94,32 @@ describe('drill mining', () => {
 
     expect(next).toBe(world);
   });
+
+  it('outputs to adjacent belt when available', () => {
+    const world = createWorld({
+      entities: {
+        '1': {
+          id: '1',
+          type: 'drill',
+          position: { x: 4.5, y: 4.5 },
+          direction: 'east',
+          inventory: { type: 'iron_ore', amount: 1 }
+        },
+        '2': {
+          id: '2',
+          type: 'belt',
+          position: { x: 5.5, y: 4.5 },
+          direction: 'east'
+        }
+      },
+      resources: {
+        [resourceKey(4, 4)]: { type: 'iron_ore', amount: 100 }
+      }
+    });
+
+    const next = applyDrillMining(world, 1);
+
+    expect(next.entities['1']?.inventory?.amount).toBe(0);
+    expect(next.entities['2']?.beltItem?.amount).toBe(1);
+  });
 });
