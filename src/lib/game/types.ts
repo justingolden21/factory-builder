@@ -31,6 +31,13 @@ export type BuildState = {
   tool: BuildTool;
 };
 
+export type ResourceType = 'iron_ore';
+
+export type ResourceTile = {
+  type: ResourceType;
+  amount: number;
+};
+
 export type EntityState = {
   id: EntityId;
   type: EntityType;
@@ -44,6 +51,7 @@ export type WorldState = {
   entities: Record<EntityId, EntityState>;
   build: BuildState;
   nextEntityId: number;
+  resources: Record<string, ResourceTile>;
 };
 
 export type EngineState = {

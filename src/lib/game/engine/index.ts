@@ -6,8 +6,22 @@ Owns game state creation and the fixed-timestep simulation loop.
 
 import type { GameState } from '$lib/game/types';
 import { applyPlayerMovement } from '$lib/game/systems/playerMovement';
+import { resourceKey } from '$lib/game/world/resources';
 
 const FIXED_STEP_MS = 50;
+const SEED_RESOURCE_AMOUNT = 100;
+
+const createSeedResources = () => {
+  const resources: GameState['world']['resources'] = {};
+
+  for (let y = 2; y <= 4; y += 1) {
+    for (let x = 2; x <= 4; x += 1) {
+      resources[resourceKey(x, y)] = { type: 'iron_ore', amount: SEED_RESOURCE_AMOUNT };
+    }
+  }
+
+  return resources;
+};
 
 const baseState: GameState = {
   engine: {
@@ -28,7 +42,8 @@ const baseState: GameState = {
     build: {
       tool: 'none'
     },
-    nextEntityId: 1
+    nextEntityId: 1,
+    resources: createSeedResources()
   }
 };
 
@@ -38,6 +53,7 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
   const player = world.player ?? {};
   const moveIntent = player.moveIntent ?? baseState.world.player.moveIntent;
   const build = world.build ?? baseState.world.build;
+  const resources = world.resources ?? baseState.world.resources;
 
   return {
     engine: {
@@ -56,7 +72,8 @@ export const createGame = (initial: Partial<GameState> = {}): GameState => {
       build: {
         tool: build.tool ?? baseState.world.build.tool
       },
-      nextEntityId: world.nextEntityId ?? baseState.world.nextEntityId
+      nextEntityId: world.nextEntityId ?? baseState.world.nextEntityId,
+      resources: { ...resources }
     }
   };
 };

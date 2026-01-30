@@ -6,6 +6,7 @@ Applies queued input commands to state while keeping the engine deterministic.
 
 import type { GameCommand } from '$lib/game/engine/commands';
 import type { EntityState, GameState } from '$lib/game/types';
+import { getResourceAt, resourceKey } from '$lib/game/world/resources';
 
 export const applyCommands = (state: GameState, commands: GameCommand[]): GameState => {
   if (commands.length === 0) {
@@ -17,6 +18,7 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
   let nextEntities = state.world.entities;
   let nextBuild = state.world.build;
   let nextEntityId = state.world.nextEntityId;
+  let nextResources = state.world.resources;
   let changed = false;
 
   const ensureWorldClone = () => {
@@ -27,11 +29,13 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
     nextBuild = { ...nextBuild };
     nextMoveIntent = { ...nextMoveIntent };
     nextEntities = { ...nextEntities };
+    nextResources = { ...nextResources };
     nextWorld = {
       ...nextWorld,
       build: nextBuild,
       entities: nextEntities,
-      nextEntityId
+      nextEntityId,
+      resources: nextResources
     };
     changed = true;
   };
@@ -88,6 +92,24 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
 
       ensureWorldClone();
       delete nextEntities[existing.id];
+    } else if (command.type === 'mine_tile') {
+      const resource = getResourceAt(nextWorld, command.tileX, command.tileY);
+      if (!resource) {
+        continue;
+      }
+
+      const nextAmount = resource.amount - 1;
+      if (nextAmount === resource.amount) {
+        continue;
+      }
+
+      ensureWorldClone();
+      const key = resourceKey(command.tileX, command.tileY);
+      if (nextAmount <= 0) {
+        delete nextResources[key];
+      } else {
+        nextResources[key] = { ...resource, amount: nextAmount };
+      }
     }
   }
 

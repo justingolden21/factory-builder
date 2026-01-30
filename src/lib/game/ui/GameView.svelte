@@ -10,6 +10,7 @@ Owns viewport measurement and camera interactions for the bootable game view.
   import type { Camera } from '$lib/game/world/camera';
   import { clampZoom, screenToWorld, worldToScreen } from '$lib/game/world/camera';
   import { getVisibleTileBounds } from '$lib/game/world/grid';
+  import { resourceKey } from '$lib/game/world/resources';
 
   let { game, dispatch } = $props<{ game: GameState; dispatch: (command: GameCommand) => void }>();
 
@@ -166,6 +167,13 @@ Owns viewport measurement and camera interactions for the bootable game view.
 
     const tool = game.world.build.tool;
     if (tool === 'none') {
+      const key = resourceKey(hoverTile.x, hoverTile.y);
+      if (!game.world.resources[key]) {
+        return;
+      }
+
+      event.preventDefault();
+      dispatch({ type: 'mine_tile', tileX: hoverTile.x, tileY: hoverTile.y });
       return;
     }
 
@@ -199,7 +207,8 @@ Owns viewport measurement and camera interactions for the bootable game view.
   };
 </script>
 
-<!-- svelte-ignore a11y_no_noninteractive_tabindex a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div
   class="relative h-full w-full"
   bind:this={wrapper}
@@ -244,18 +253,6 @@ Owns viewport measurement and camera interactions for the bootable game view.
         {/each}
       </g>
 
-      {#if hoverTile}
-        {@const hoverPos = worldToScreen(hoverTile.x, hoverTile.y, camera, viewport.width, viewport.height)}
-        <rect
-          x={hoverPos.x}
-          y={hoverPos.y}
-          width={camera.zoom}
-          height={camera.zoom}
-          fill="rgba(56, 189, 248, 0.12)"
-          stroke="rgba(56, 189, 248, 0.6)"
-        />
-      {/if}
-
       {@const playerPos = worldToScreen(
         game.world.player.position.x,
         game.world.player.position.y,
@@ -263,6 +260,30 @@ Owns viewport measurement and camera interactions for the bootable game view.
         viewport.width,
         viewport.height
       )}
+      {#each Object.entries(game.world.resources) as [key, resource] (key)}
+        {@const parts = key.split(':')}
+        {@const tileX = Number(parts[0])}
+        {@const tileY = Number(parts[1])}
+        {@const resourcePos = worldToScreen(tileX + 0.5, tileY + 0.5, camera, viewport.width, viewport.height)}
+        {@const resourceSize = camera.zoom * 0.6}
+        {@const resourceOpacity = Math.max(0.2, Math.min(1, resource.amount / 100))}
+        <circle
+          cx={resourcePos.x}
+          cy={resourcePos.y}
+          r={resourceSize / 2}
+          fill={`rgba(71, 85, 105, ${resourceOpacity})`}
+          stroke="rgba(148, 163, 184, 0.7)"
+        />
+        <text
+          x={resourcePos.x}
+          y={resourcePos.y + resourceSize * 0.15}
+          text-anchor="middle"
+          font-size={resourceSize * 0.35}
+          fill="white"
+        >
+          io
+        </text>
+      {/each}
       {#each Object.values(game.world.entities) as entity (entity.id)}
         {@const entityPos = worldToScreen(
           entity.position.x,
@@ -305,6 +326,17 @@ Owns viewport measurement and camera interactions for the bootable game view.
       >
         P
       </text>
+      {#if hoverTile}
+        {@const hoverPos = worldToScreen(hoverTile.x, hoverTile.y, camera, viewport.width, viewport.height)}
+        <rect
+          x={hoverPos.x}
+          y={hoverPos.y}
+          width={camera.zoom}
+          height={camera.zoom}
+          fill="rgba(56, 189, 248, 0.12)"
+          stroke="rgba(56, 189, 248, 0.6)"
+        />
+      {/if}
     {/if}
   </svg>
 </div>

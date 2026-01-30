@@ -26,4 +26,9 @@ export type GameCommand =
       type: 'remove_entity';
       tileX: number;
       tileY: number;
+    }
+  | {
+      type: 'mine_tile';
+      tileX: number;
+      tileY: number;
     };
