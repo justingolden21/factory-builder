@@ -310,6 +310,17 @@ Owns viewport measurement and camera interactions for the bootable game view.
         >
           {entity.type === 'belt' ? 'b' : entity.type === 'drill' ? 'd' : 'c'}
         </text>
+        {#if entity.type === 'drill'}
+          <text
+            x={entityPos.x}
+            y={entityPos.y + entitySize * 0.48}
+            text-anchor="middle"
+            font-size={entitySize * 0.22}
+            fill="rgba(226, 232, 240, 0.9)"
+          >
+            io: {entity.inventory?.amount ?? 0}
+          </text>
+        {/if}
       {/each}
       <circle
         cx={playerPos.x}

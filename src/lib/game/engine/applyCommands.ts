@@ -66,6 +66,13 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
       ensureWorldClone();
       nextBuild.tool = command.tool;
     } else if (command.type === 'place_entity') {
+      if (command.entityType === 'drill') {
+        const resource = getResourceAt(nextWorld, command.tileX, command.tileY);
+        if (!resource) {
+          continue;
+        }
+      }
+
       if (findEntityAt(command.tileX, command.tileY)) {
         continue;
       }

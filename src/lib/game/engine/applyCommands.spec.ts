@@ -41,7 +41,7 @@ describe('applyCommands', () => {
 
   it('removes entity on tile', () => {
     const state = runCommands([
-      { type: 'place_entity', entityType: 'drill', tileX: 0, tileY: 0 }
+      { type: 'place_entity', entityType: 'belt', tileX: 0, tileY: 0 }
     ]);
     const next = applyCommands(state, [{ type: 'remove_entity', tileX: 0, tileY: 0 }]);
 

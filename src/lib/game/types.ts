@@ -38,11 +38,20 @@ export type ResourceTile = {
   amount: number;
 };
 
+export type ItemType = 'iron_ore';
+
+export type ItemStack = {
+  type: ItemType;
+  amount: number;
+};
+
 export type EntityState = {
   id: EntityId;
   type: EntityType;
   position: Vec2;
   direction: Direction;
+  inventory?: ItemStack | null;
+  miningProgress?: number;
 };
 
 export type WorldState = {
