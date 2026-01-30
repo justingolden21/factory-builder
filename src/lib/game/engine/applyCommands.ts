@@ -6,6 +6,7 @@ Applies queued input commands to state while keeping the engine deterministic.
 
 import type { GameCommand } from '$lib/game/engine/commands';
 import type { EntityState, GameState } from '$lib/game/types';
+import { addOne, takeOne } from '$lib/game/world/inventory';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
 import { getEntityAt, tileKey, tileOfEntity } from '$lib/game/world/tiles';
 
@@ -178,20 +179,29 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         continue;
       }
 
-      if (entity.type === 'chest' && entity.inventory && entity.inventory.amount > 0) {
+      if (entity.type === 'chest' && entity.inventory) {
+        const [remaining, taken] = takeOne(entity.inventory);
+        if (!taken) {
+          continue;
+        }
+
         ensureWorldClone();
-        nextPlayerInventory.item = { type: entity.inventory.type, amount: 1 };
-        const nextAmount = entity.inventory.amount - 1;
+        nextPlayerInventory.item = taken;
         nextEntities[entity.id] = {
           ...entity,
-          inventory: nextAmount > 0 ? { ...entity.inventory, amount: nextAmount } : null
+          inventory: remaining
         };
       } else if (entity.type === 'belt' && entity.beltItem) {
+        const [remaining, taken] = takeOne(entity.beltItem);
+        if (!taken) {
+          continue;
+        }
+
         ensureWorldClone();
-        nextPlayerInventory.item = { ...entity.beltItem };
+        nextPlayerInventory.item = taken;
         nextEntities[entity.id] = {
           ...entity,
-          beltItem: null
+          beltItem: remaining
         };
       }
     } else if (command.type === 'drop_to_tile') {
@@ -212,17 +222,17 @@ export const applyCommands = (state: GameState, commands: GameCommand[]): GameSt
         }
 
         ensureWorldClone();
-        const nextAmount = (existing?.amount ?? 0) + 1;
+        const nextInventory = addOne(existing ?? null, carried.type);
         nextEntities[entity.id] = {
           ...entity,
-          inventory: { type: carried.type, amount: nextAmount }
+          inventory: nextInventory
         };
         nextPlayerInventory.item = null;
       } else if (entity.type === 'belt' && !entity.beltItem) {
         ensureWorldClone();
         nextEntities[entity.id] = {
           ...entity,
-          beltItem: { type: carried.type, amount: 1 }
+          beltItem: addOne(null, carried.type)
         };
         nextPlayerInventory.item = null;
       }

@@ -43,13 +43,13 @@ export type ResourceTile = {
 
 export type ItemType = 'iron_ore';
 
-export type ItemStack = {
+export type Inventory = {
   type: ItemType;
   amount: number;
 };
 
 export type PlayerInventory = {
-  item?: ItemStack | null;
+  item?: Inventory | null;
 };
 
 export type EntityState = {
@@ -57,9 +57,9 @@ export type EntityState = {
   type: EntityType;
   position: Vec2;
   direction: Direction;
-  inventory?: ItemStack | null;
+  inventory?: Inventory | null;
   miningProgress?: number;
-  beltItem?: ItemStack | null;
+  beltItem?: Inventory | null;
 };
 
 export type WorldState = {

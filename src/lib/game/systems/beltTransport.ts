@@ -4,7 +4,8 @@ Belt transport simulation.
 Moves a single item between belt tiles each tick in a deterministic order.
 */
 
-import type { ItemStack, WorldState } from '$lib/game/types';
+import type { Inventory, WorldState } from '$lib/game/types';
+import { takeOne } from '$lib/game/world/inventory';
 import { getEntityAt, tileOfEntity } from '$lib/game/world/tiles';
 
 type DirectionDelta = {
@@ -42,7 +43,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
   };
 
   for (let tick = 0; tick < ticks; tick += 1) {
-    const plannedMoves: Array<{ fromId: string; toId: string; item: ItemStack }> = [];
+    const plannedMoves: Array<{ fromId: string; toId: string; item: Inventory }> = [];
     const blockedTargets = new Set<string>();
     const entityKeys = Object.keys(nextEntities).sort();
 
@@ -66,7 +67,12 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
         continue;
       }
 
-      plannedMoves.push({ fromId: entity.id, toId: target.id, item: { ...entity.beltItem } });
+      const [, taken] = takeOne(entity.beltItem);
+      if (!taken) {
+        continue;
+      }
+
+      plannedMoves.push({ fromId: entity.id, toId: target.id, item: taken });
       blockedTargets.add(target.id);
     }
 
@@ -90,7 +96,7 @@ export const applyBeltTransport = (world: WorldState, ticks: number): WorldState
       };
       nextEntities[move.toId] = {
         ...to,
-        beltItem: { ...move.item }
+        beltItem: move.item
       };
     }
   }

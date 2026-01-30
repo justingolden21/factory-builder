@@ -4,7 +4,8 @@ Inserter transport simulation.
 Moves one item from the tile behind an inserter to the tile in front.
 */
 
-import type { ItemStack, WorldState } from '$lib/game/types';
+import type { Inventory, WorldState } from '$lib/game/types';
+import { addOne, takeOne } from '$lib/game/world/inventory';
 import { getEntityAt, tileOfEntity } from '$lib/game/world/tiles';
 
 type DirectionDelta = {
@@ -68,7 +69,10 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
         continue;
       }
 
-      const item = input.beltItem;
+      const [remaining, taken] = takeOne(input.beltItem);
+      if (!taken) {
+        continue;
+      }
 
       if (!output) {
         continue;
@@ -82,30 +86,26 @@ export const applyInserterTransport = (world: WorldState, ticks: number): WorldS
         ensureWorldClone();
         nextEntities[input.id] = {
           ...input,
-          beltItem: null
+          beltItem: remaining
         };
         nextEntities[output.id] = {
           ...output,
-          beltItem: { ...item }
+          beltItem: taken
         };
       } else if (output.type === 'chest') {
         const existing = output.inventory;
-        if (existing && existing.type !== item.type) {
+        if (existing && existing.type !== taken.type) {
           continue;
         }
 
         ensureWorldClone();
         nextEntities[input.id] = {
           ...input,
-          beltItem: null
-        };
-        const nextInventory: ItemStack = {
-          type: item.type,
-          amount: (existing?.amount ?? 0) + item.amount
+          beltItem: remaining
         };
         nextEntities[output.id] = {
           ...output,
-          inventory: nextInventory
+          inventory: addOne(existing ?? null, taken.type)
         };
       }
     }

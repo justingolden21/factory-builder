@@ -4,7 +4,8 @@ Drill mining simulation.
 Consumes resource tiles under drills and fills a small internal buffer over time.
 */
 
-import type { ItemStack, WorldState } from '$lib/game/types';
+import type { Inventory, WorldState } from '$lib/game/types';
+import { addOne, takeOne } from '$lib/game/world/inventory';
 import { getResourceAt, resourceKey } from '$lib/game/world/resources';
 import { getEntityAt } from '$lib/game/world/tiles';
 
@@ -58,8 +59,9 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
       continue;
     }
 
-    const inventory = entity.inventory ?? { type: 'iron_ore', amount: 0 };
-    if (inventory.amount >= DRILL_BUFFER_CAPACITY) {
+    const inventory = entity.inventory ?? null;
+    const inventoryAmount = inventory?.amount ?? 0;
+    if (inventoryAmount >= DRILL_BUFFER_CAPACITY) {
       continue;
     }
 
@@ -69,7 +71,7 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
       continue;
     }
 
-    const available = Math.min(resource.amount, DRILL_BUFFER_CAPACITY - inventory.amount);
+    const available = Math.min(resource.amount, DRILL_BUFFER_CAPACITY - inventoryAmount);
     if (available <= 0) {
       continue;
     }
@@ -83,25 +85,27 @@ export const applyDrillMining = (world: WorldState, ticks: number): WorldState =
 
     ensureWorldClone();
 
-    let nextInventory: ItemStack = {
-      type: inventory.type,
-      amount: inventory.amount + mined
-    };
+    let nextInventory: Inventory | null = inventory;
+    for (let i = 0; i < mined; i += 1) {
+      nextInventory = addOne(nextInventory, 'iron_ore');
+    }
 
     const delta = directionDeltas[entity.direction];
-    if (delta && nextInventory.amount > 0) {
+    if (delta && nextInventory && nextInventory.amount > 0) {
       const outputX = tileX + delta.x;
       const outputY = tileY + delta.y;
       const target = getEntityAt(nextWorld, outputX, outputY);
 
       if (target && target.type === 'belt' && !target.beltItem) {
-        nextInventory = {
-          ...nextInventory,
-          amount: nextInventory.amount - 1
-        };
+        const [remaining, taken] = takeOne(nextInventory);
+        if (!taken) {
+          continue;
+        }
+
+        nextInventory = remaining;
         nextEntities[target.id] = {
           ...target,
-          beltItem: { type: nextInventory.type, amount: 1 }
+          beltItem: taken
         };
       }
     }
