@@ -1,0 +1,156 @@
+/*
+Deterministic game engine core.
+
+Owns game state creation and the fixed-timestep simulation loop.
+*/
+
+import type { GameState } from '$lib/game/types';
+import { applyBeltTransport } from '$lib/game/systems/beltTransport';
+import { applyDrillMining } from '$lib/game/systems/drillMining';
+import { applyInserterTransport } from '$lib/game/systems/inserterTransport';
+import { applyPlayerMovement } from '$lib/game/systems/playerMovement';
+import { resourceKey } from '$lib/game/world/resources';
+import { tileKey, tileOfEntity } from '$lib/game/world/tiles';
+
+const FIXED_STEP_MS = 50;
+const SEED_RESOURCE_AMOUNT = 100;
+
+const createSeedResources = () => {
+  const resources: GameState['world']['resources'] = {};
+
+  for (let y = 2; y <= 4; y += 1) {
+    for (let x = 2; x <= 4; x += 1) {
+      resources[resourceKey(x, y)] = { type: 'iron_ore', amount: SEED_RESOURCE_AMOUNT };
+    }
+  }
+
+  return resources;
+};
+
+const baseState: GameState = {
+  engine: {
+    accumulatorMs: 0
+  },
+  world: {
+    tick: 0,
+    player: {
+      position: { x: 0, y: 0 },
+      moveIntent: {
+        up: false,
+        down: false,
+        left: false,
+        right: false
+      },
+      inventory: {
+        slot: null
+      }
+    },
+    entities: {},
+    entityTiles: {},
+    build: {
+      tool: 'none'
+    },
+    nextEntityId: 1,
+    resources: createSeedResources()
+  }
+};
+
+export const createGame = (initial: Partial<GameState> = {}): GameState => {
+  const engine = initial.engine ?? {};
+  const world = initial.world ?? {};
+  const player = world.player ?? {};
+  const moveIntent = player.moveIntent ?? baseState.world.player.moveIntent;
+  const inventory = player.inventory ?? baseState.world.player.inventory;
+  const build = world.build ?? baseState.world.build;
+  const resources = world.resources ?? baseState.world.resources;
+
+  const mergedEntities = { ...baseState.world.entities, ...(world.entities ?? {}) };
+  const entityTiles: GameState['world']['entityTiles'] = {};
+  const nextEntities: GameState['world']['entities'] = {};
+  const entityIds = Object.keys(mergedEntities).sort();
+
+  for (const id of entityIds) {
+    const entity = mergedEntities[id];
+    if (!entity) {
+      continue;
+    }
+
+    const tile = tileOfEntity(entity);
+    const key = tileKey(tile.x, tile.y);
+    if (entityTiles[key]) {
+      continue;
+    }
+
+    entityTiles[key] = id;
+    nextEntities[id] = entity;
+  }
+
+  return {
+    engine: {
+      accumulatorMs: engine.accumulatorMs ?? baseState.engine.accumulatorMs
+    },
+    world: {
+      tick: world.tick ?? baseState.world.tick,
+      player: {
+        position: {
+          x: player.position?.x ?? baseState.world.player.position.x,
+          y: player.position?.y ?? baseState.world.player.position.y
+        },
+        moveIntent: { ...moveIntent },
+        inventory: {
+          slot: inventory.slot ?? null
+        }
+      },
+      entities: nextEntities,
+      entityTiles,
+      build: {
+        tool: build.tool ?? baseState.world.build.tool
+      },
+      nextEntityId: world.nextEntityId ?? baseState.world.nextEntityId,
+      resources: { ...resources }
+    }
+  };
+};
+
+export const stepGame = (state: GameState, dtMs: number): GameState => {
+  const safeDt = Math.max(0, dtMs);
+
+  const nextAccumulator = state.engine.accumulatorMs + safeDt;
+  const ticks = Math.floor(nextAccumulator / FIXED_STEP_MS);
+  const remainder = nextAccumulator - ticks * FIXED_STEP_MS;
+
+  if (ticks === 0) {
+    if (remainder === state.engine.accumulatorMs) {
+      return state;
+    }
+
+    return {
+      engine: {
+        accumulatorMs: remainder
+      },
+      world: state.world
+    };
+  }
+
+  const movedWorld = applyPlayerMovement(state.world, ticks);
+  const minedWorld = applyDrillMining(movedWorld, ticks);
+  const beltWorld = applyBeltTransport(minedWorld, ticks);
+  const inserterWorld = applyInserterTransport(beltWorld, ticks);
+  const nextWorldBase = inserterWorld === state.world ? state.world : inserterWorld;
+
+  return {
+    engine: {
+      accumulatorMs: remainder
+    },
+    world: {
+      ...nextWorldBase,
+      tick: state.world.tick + ticks,
+      player: {
+        ...nextWorldBase.player,
+        position: { ...nextWorldBase.player.position },
+        moveIntent: { ...nextWorldBase.player.moveIntent }
+      },
+      entities: { ...nextWorldBase.entities }
+    }
+  };
+};
